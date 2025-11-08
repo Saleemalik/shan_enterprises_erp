@@ -1,0 +1,10 @@
+env
+*.cpython*
+__pycache__
+node_modules
+.env
+/dist
+/media
+/staticfiles/*
+db.sqlite3
+!.gitignore
