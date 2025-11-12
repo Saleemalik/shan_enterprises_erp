@@ -57,13 +57,14 @@ export default function Destination() {
     if (!confirm("Delete selected destinations?")) return;
 
     try {
-      await axiosInstance.delete(`/destinations/?ids=${selectedIds.join(",")}`);
+      await axiosInstance.delete(`/destinations/bulk_delete/?ids=${selectedIds.join(",")}`);
       setSelectedIds([]);
       fetchDestinations(1, search);
     } catch (error) {
-      alert("Error deleting destination");
+      alert("Error deleting destinations");
     }
   };
+
 
   const openEditModal = (destination) => {
     setForm({
@@ -124,7 +125,7 @@ export default function Destination() {
       {/* ---- Table ---- */}
       <div className="border rounded-md overflow-hidden">
        
-            <table className="w-full bg-white shadow rounded border">
+        <table className="w-full bg-white shadow rounded border">
           <thead className="bg-gray-100">
             <tr>
               <th className="p-2">
@@ -147,6 +148,13 @@ export default function Destination() {
           </thead>
 
           <tbody>
+            {destinations.length === 0 && (
+              <tr>
+                <td colSpan={6} className="text-center p-4 text-gray-500 italic">
+                  No Destinations found
+                </td>
+              </tr>
+            )}
             {destinations.map((destination) => (
               <tr key={destination.id} className="border-b">
                 <td className="p-2 text-center">

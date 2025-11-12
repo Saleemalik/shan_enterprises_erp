@@ -107,7 +107,7 @@ export default function Places() {
     if (selectedIds.length === 0) return;
     if (!confirm("Delete selected places?")) return;
 
-    await axiosInstance.post(`/places/bulk-delete/`, { ids: selectedIds });
+    await axiosInstance.delete(`/places/bulk_delete/?ids=${selectedIds}`, { ids: selectedIds });
 
     setSelectedIds([]);
     fetchPlaces();
