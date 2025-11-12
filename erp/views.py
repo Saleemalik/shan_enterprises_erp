@@ -9,8 +9,8 @@ class PlaceViewSet(viewsets.ModelViewSet):
     serializer_class = PlaceSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['name']      
-    ordering_fields = ['name', 'distance']  
+    search_fields = ['name', 'district', 'destination__name']      
+    ordering_fields = ['name', 'distance', 'district', 'destination__name']  
 
 
 class DealerViewSet(viewsets.ModelViewSet):

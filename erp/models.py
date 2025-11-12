@@ -1,14 +1,6 @@
 from django.db import models
 
 
-class Place(models.Model):
-    name = models.CharField(max_length=255, unique=True)
-    distance = models.FloatField()
-
-    def __str__(self):
-        return f"{self.name} ({self.distance} km)"
-
-
 class Destination(models.Model):
     name = models.CharField(max_length=255)
     place = models.CharField(max_length=255, null=True, blank=True)
@@ -17,6 +9,21 @@ class Destination(models.Model):
 
     def __str__(self):
         return self.name
+
+class Place(models.Model):
+    name = models.CharField(max_length=255)
+    distance = models.FloatField()
+    district = models.CharField(max_length=255, blank=True, null=True)
+    destination = models.ForeignKey(Destination, on_delete=models.CASCADE, blank=True, null=True, related_name="places")
+    
+    class Meta:
+        unique_together = ('name', 'destination')  
+
+
+    def __str__(self):
+        return f"{self.name} ({self.distance} km)"
+
+
 
 
 class Dealer(models.Model):

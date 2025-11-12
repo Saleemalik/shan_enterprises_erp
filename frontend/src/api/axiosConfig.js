@@ -1,11 +1,14 @@
+// src/api/axiosConfig.js
 import axios from "axios";
 
-const API_REFRESH = "http://localhost:8000/api/refresh/";
+const API_BASE = "http://localhost:8000/api";
+const API_REFRESH = `${API_BASE}/refresh/`;
 
 const axiosInstance = axios.create({
-  baseURL: "http://localhost:8000/api",
+  baseURL: API_BASE,
 });
 
+// ✅ Attach access token before request
 axiosInstance.interceptors.request.use((config) => {
   const token = localStorage.getItem("access");
   if (token) {
@@ -14,7 +17,7 @@ axiosInstance.interceptors.request.use((config) => {
   return config;
 });
 
-// 🔄 Auto refresh access token on 401
+// ✅ Auto refresh access token on 401
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -30,11 +33,9 @@ axiosInstance.interceptors.response.use(
       }
 
       try {
-        const response = await axios.post(API_REFRESH, {
-          refresh: refreshToken,
-        });
+        const res = await axios.post(API_REFRESH, { refresh: refreshToken });
 
-        const newAccess = response.data.access;
+        const newAccess = res.data.access;
         localStorage.setItem("access", newAccess);
 
         originalRequest.headers["Authorization"] = `Bearer ${newAccess}`;

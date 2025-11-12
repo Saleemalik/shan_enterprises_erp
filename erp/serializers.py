@@ -3,9 +3,12 @@ from .models import Dealer, Place, Destination, RateRange
 
 
 class PlaceSerializer(serializers.ModelSerializer):
+    destination_name = serializers.CharField(source="destination.name", read_only=True)
+
+
     class Meta:
         model = Place
-        fields = ['id', 'name', 'distance']
+        fields = ['id', 'name', 'distance', 'district', 'destination', 'destination_name']
 
 
 class DealerSerializer(serializers.ModelSerializer):
