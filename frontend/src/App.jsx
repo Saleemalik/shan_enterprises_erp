@@ -6,7 +6,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AppLayout from "./layout/AppLayout";
 import Dealers from "./pages/Dealers";
 import Places from "./pages/Places";
-import Destination from "./pages/Destination";
+import Destinations from "./pages/Destinations";
 
 export default function App() {
   return (
@@ -22,7 +22,7 @@ export default function App() {
           }
         >
           <Route path="dashboard" element={<Dashboard />} />
-          <Route path="destinations" element={<Destination />} />
+          <Route path="destinations" element={<Destinations />} />
           <Route path="places" element={<Places />} />
           <Route path="dealers" element={<Dealers />} />
         </Route>
