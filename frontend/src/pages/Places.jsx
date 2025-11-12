@@ -121,7 +121,7 @@ export default function Places() {
   };
 
   return (
-    <>
+    <div className="p-4">
       {/* Page Header */}
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-4xl font-semibold">Places</h1>
@@ -149,14 +149,16 @@ export default function Places() {
       <input
         type="text"
         placeholder="Search places..."
-        className="border px-3 py-2 rounded mb-4 w-72"
+        className="border px-3 py-2 rounded mb-4 w-full"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
 
       {/* Table */}
+      <div className="border rounded-md overflow-hidden">
+
       <table className="w-full bg-white shadow rounded border">
-        <thead className="bg-gray-100 text-left">
+        <thead className="bg-gray-100">
           <tr>
             <th className="p-2">
               <input
@@ -165,10 +167,10 @@ export default function Places() {
                 checked={selectedIds.length === places.length && places.length > 0}
               />
             </th>
-            <th className="p-2">Place</th>
-            <th className="p-2">District</th>
-            <th className="p-2">Destination</th>
-            <th className="p-2">Distance (KM)</th>
+            <th className="p-2 text-left">Place</th>
+            <th className="p-2 text-left">District</th>
+            <th className="p-2 text-left">Destination</th>
+            <th className="p-2 text-left">Distance (KM)</th>
             <th className="p-2"></th>
           </tr>
         </thead>
@@ -184,7 +186,7 @@ export default function Places() {
 
           {places.map((p) => (
             <tr key={p.id} className="border-t">
-              <td className="p-2">
+              <td className="p-2 text-center">
                 <input
                   type="checkbox"
                   checked={selectedIds.includes(p.id)}
@@ -216,7 +218,7 @@ export default function Places() {
       </table>
 
       {/* Pagination */}
-      <div className="flex justify-between items-center mt-4">
+      <div className="flex justify-between items-center p-3 bg-gray-100">
         <button
           disabled={page === 1}
           onClick={() => setPage(page - 1)}
@@ -236,6 +238,7 @@ export default function Places() {
         >
           Next
         </button>
+      </div>
       </div>
 
       {/* Popup Modal */}
@@ -311,6 +314,6 @@ export default function Places() {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
