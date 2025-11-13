@@ -7,6 +7,7 @@ import AppLayout from "./layout/AppLayout";
 import Dealers from "./pages/Dealers";
 import Places from "./pages/Places";
 import Destinations from "./pages/Destinations";
+import RateRanges from "./pages/RateRanges";
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="destinations" element={<Destinations />} />
           <Route path="places" element={<Places />} />
+          <Route path="rate-ranges" element={<RateRanges />} />
           <Route path="dealers" element={<Dealers />} />
         </Route>
       </Routes>

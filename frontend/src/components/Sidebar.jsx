@@ -5,6 +5,7 @@ export default function Sidebar() {
     { label: "Dashboard", path: "/app/dashboard" },
     { label: "Destinations", path: "/app/destinations" },
     { label: "Places", path: "/app/places" },
+    { label: "RateRanges", path: "/app/rate-ranges" },
     { label: "Dealers", path: "/app/dealers" },
   ];
 
