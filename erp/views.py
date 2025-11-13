@@ -27,3 +27,4 @@ class DestinationViewSet(AppBaseViewSet):
     serializer_class = DestinationSerializer
     search_fields = ['name', 'place']        
     ordering_fields = ['name']  
+    

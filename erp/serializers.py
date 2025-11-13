@@ -22,7 +22,7 @@ class DealerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Dealer
-        fields = ['id', 'code', 'name', 'mobile', 'places', 'pincode', 'place_ids', 'destination', 'active']
+        fields = '__all__'
         
 
      

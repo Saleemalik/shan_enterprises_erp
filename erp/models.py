@@ -24,16 +24,14 @@ class Place(models.Model):
         return f"{self.name} ({self.distance} km)"
 
 
-
-
 class Dealer(models.Model):
     code = models.CharField(max_length=255, unique=True)
     name = models.CharField(max_length=255)
 
     places = models.ManyToManyField("Place", related_name="dealers")
+    address = models.TextField(null=True, blank=True)
     pincode = models.CharField(max_length=20, null=True, blank=True)
     mobile = models.CharField(max_length=20, null=True, blank=True)
-    destination = models.ForeignKey(Destination, on_delete=models.SET_NULL, null=True, blank=True)
 
     active = models.BooleanField(default=True)
 
