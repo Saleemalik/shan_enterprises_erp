@@ -17,7 +17,8 @@ class DealerSerializer(serializers.ModelSerializer):
         queryset=Place.objects.all(),
         many=True,
         write_only=True,
-        source='places'
+        source='places',
+        required=False
     )
 
     class Meta:
