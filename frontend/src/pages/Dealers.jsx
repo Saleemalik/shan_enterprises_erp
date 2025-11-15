@@ -149,7 +149,7 @@ export default function Dealers() {
             className="px-4 py-2 bg-green-600 text-white rounded"
             onClick={() => document.getElementById("excelInput").click()}
           >
-            Import Excel
+            Import Dealers
           </button>
 
           <input

@@ -46,6 +46,30 @@ class DealerViewSet(AppBaseViewSet):
         created_dealers = 0
         created_places = 0
         created_destinations = 0
+        
+        def clean_number(val):
+            """Clean mobile/pincode values from Excel"""
+            if pd.isna(val):
+                return ""
+            
+            s = str(val).strip()
+
+            # Remove trailing .0 (Excel float)
+            if s.endswith(".0"):
+                s = s[:-2]
+
+            # Remove spaces
+            s = s.replace(" ", "")
+
+            # Convert scientific notation (e.g., 6.78E5)
+            if "e" in s.lower():
+                try:
+                    s = str(int(float(s)))
+                except:
+                    pass
+
+            return s
+
 
         with transaction.atomic():
             for sheet_name in excel.sheet_names:
@@ -91,8 +115,8 @@ class DealerViewSet(AppBaseViewSet):
                 )
                 if created:
                     created_destinations += 1
+                    
 
-                # Loop rows
                 # Loop rows
                 for _, row in df.iterrows():
 
@@ -114,8 +138,9 @@ class DealerViewSet(AppBaseViewSet):
                         code=str(row[col_map["code"]]).strip(),
                         defaults={
                             "name": str(row[col_map["name"]]).strip(),
-                            "mobile": str(row[col_map["mobile"]]).strip(),
-                            "pincode": str(row[col_map["pincode"]]).strip(),
+                            "mobile": clean_number(row[col_map["mobile"]]),
+                            "pincode": clean_number(row[col_map["pincode"]]),
+
                         }
                     )
                     if dealer_created:
