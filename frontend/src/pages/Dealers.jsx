@@ -9,6 +9,7 @@ export default function Dealers() {
   const [selectedIds, setSelectedIds] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [excelFile, setExcelFile] = useState(null);
 
   const [form, setForm] = useState({
     code: "",
@@ -86,6 +87,32 @@ export default function Dealers() {
     }
   };
 
+  const handleExcelUpload = async (file) => {
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await axiosInstance.post(
+        "/dealers/import_excel/",
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+
+      alert(
+        `Import Success!\nDealers: ${res.data.dealers_created}\nPlaces: ${res.data.places_created}\nDestinations: ${res.data.destinations_created}`
+      );
+
+      fetchDealers(1, ""); // refresh list
+      fetchPlaces();       // refresh all places for modal selection
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.error || "Excel import failed");
+    }
+  };
+
+
   const openEditModal = (dealer) => {
       setForm({
         code: dealer.code,
@@ -117,6 +144,25 @@ export default function Dealers() {
               Delete Selected ({selectedIds.length})
             </button>
           )}
+
+          <button
+            className="px-4 py-2 bg-green-600 text-white rounded"
+            onClick={() => document.getElementById("excelInput").click()}
+          >
+            Import Excel
+          </button>
+
+          <input
+            id="excelInput"
+            type="file"
+            accept=".xls,.xlsx,.ods"
+            className="hidden"
+            onChange={(e) => {
+              setExcelFile(e.target.files[0]);
+              if (e.target.files[0]) handleExcelUpload(e.target.files[0]);
+            }}
+          />
+
           <button
             onClick={() => {
               setForm({ code: "", name: "", address: "", pincode: "", mobile: "", places: [] });

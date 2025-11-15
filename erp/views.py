@@ -1,7 +1,22 @@
 from .models import Dealer, Place, Destination, RateRange
 from .serializers import DealerSerializer, PlaceSerializer, DestinationSerializer, RateRangeSerializer
 from .base import AppBaseViewSet
+import pandas as pd
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django.db import transaction
+from rest_framework import status
 
+def safe_float(val):
+    if pd.isna(val):
+        return 0
+    val = str(val).strip()
+    if val == "" or val.lower() == "nil" or val == "-":
+        return 0
+    try:
+        return float(val)
+    except:
+        return 0
 
 class PlaceViewSet(AppBaseViewSet):
     queryset = Place.objects.all().order_by("name")
@@ -11,11 +26,111 @@ class PlaceViewSet(AppBaseViewSet):
 
 
 class DealerViewSet(AppBaseViewSet):
-    queryset = Dealer.objects.all().order_by("name")
+    queryset = Dealer.objects.all().order_by("code")
     serializer_class = DealerSerializer
-    search_fields = ['name', 'code', 'mobile', 'places__name'] 
-    ordering_fields = ['name', 'code']
-    
+    search_fields = ["name", "code", "mobile", "places__name", "places__destination__name"]
+    ordering_fields = ["name", "code"]
+
+    @action(detail=False, methods=["post"], url_path="import_excel")
+    def import_excel(self, request):
+        file = request.FILES.get("file")
+        if not file:
+            return Response({"error": "No file uploaded"}, status=400)
+
+        try:
+            # Load workbook with sheet names
+            excel = pd.ExcelFile(file)
+        except Exception as e:
+            return Response({"error": f"Unable to read Excel: {e}"}, status=400)
+
+        created_dealers = 0
+        created_places = 0
+        created_destinations = 0
+
+        with transaction.atomic():
+            for sheet_name in excel.sheet_names:
+
+                df = pd.read_excel(excel, sheet_name=sheet_name)
+                
+                if df.empty or len(df.columns) == 0:
+                    print(f"Skipping empty sheet: {sheet_name}")
+                    continue
+
+                # Clean column names
+                df.columns = df.columns.str.lower().str.strip()
+
+                # Required columns
+                required_cols = {
+                    "code": ["code", "dealer code", "Customer No"],
+                    "name": ["name", "dealer name", "Name 1"],
+                    "mobile": ["mobile", "phone", "mob no.", "mob.no."],
+                    "pincode": ["pincode", "pin", "pin code"],
+                    "place": ["place", "Unloading Point"],
+                    "distance": ["distance", "km","Distance from Rail Head", "RH Distance"]
+                }
+                col_map = {}
+                
+                for field, possible in required_cols.items():
+                    found = None
+                    for col in df.columns:
+                        if col in [p.lower() for p in possible]:
+                            found = col
+                            break
+                    if not found:
+                        return Response(
+                            {"error": f"Column '{field}' missing in sheet '{sheet_name}'. Expected one of {possible}"},
+                            status=400
+                        )
+                    col_map[field] = found
+
+            
+                # Destination
+                destination_name = f"{sheet_name} FOL"
+                destination, created = Destination.objects.get_or_create(
+                    name=destination_name, place=sheet_name, defaults={"is_garage": False}
+                )
+                if created:
+                    created_destinations += 1
+
+                # Loop rows
+                # Loop rows
+                for _, row in df.iterrows():
+
+                    # ---- SAFE distance handling ----
+                    raw_distance = row[col_map["distance"]]
+                    distance_value = safe_float(raw_distance)
+
+                    # ---- Get/Create Place ----
+                    place, place_created = Place.objects.get_or_create(
+                        name=str(row[col_map["place"]]).strip(),
+                        destination=destination,
+                        defaults={"distance": distance_value}
+                    )
+                    if place_created:
+                        created_places += 1
+
+                    # ---- Get/Create Dealer ----
+                    dealer, dealer_created = Dealer.objects.get_or_create(
+                        code=str(row[col_map["code"]]).strip(),
+                        defaults={
+                            "name": str(row[col_map["name"]]).strip(),
+                            "mobile": str(row[col_map["mobile"]]).strip(),
+                            "pincode": str(row[col_map["pincode"]]).strip(),
+                        }
+                    )
+                    if dealer_created:
+                        created_dealers += 1
+
+                    # ---- Add place M2M ----
+                    dealer.places.add(place)
+
+        return Response({
+            "status": "success",
+            "dealers_created": created_dealers,
+            "places_created": created_places,
+            "destinations_created": created_destinations,
+        }, status=200)
+        
 class RateRangeViewSet(AppBaseViewSet):
     queryset = RateRange.objects.all().order_by("from_km")
     serializer_class = RateRangeSerializer
