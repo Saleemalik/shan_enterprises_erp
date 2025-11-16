@@ -23,6 +23,13 @@ class PlaceViewSet(AppBaseViewSet):
     serializer_class = PlaceSerializer
     search_fields = ['name', 'district', 'destination__name']      
     ordering_fields = ['name', 'distance', 'district', 'destination__name']  
+    
+    def list(self, request, *args, **kwargs):
+        if request.query_params.get("all") == "1":
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = self.get_serializer(queryset, many=True)
+            return Response({"results": serializer.data})
+        return super().list(request, *args, **kwargs)
 
 
 class DealerViewSet(AppBaseViewSet):
