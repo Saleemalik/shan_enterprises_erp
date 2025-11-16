@@ -1,11 +1,13 @@
-from .models import Dealer, Place, Destination, RateRange
-from .serializers import DealerSerializer, PlaceSerializer, DestinationSerializer, RateRangeSerializer
+from .models import Dealer, Place, Destination, RateRange, DestinationEntry
+from .serializers import DealerSerializer, PlaceSerializer, DestinationSerializer, RateRangeSerializer, DestinationEntrySerializer, DestinationEntryWriteSerializer
 from .base import AppBaseViewSet
 import pandas as pd
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db import transaction
 from rest_framework import status
+from rest_framework.viewsets import ModelViewSet
+
 
 def safe_float(val):
     if pd.isna(val):
@@ -134,6 +136,7 @@ class DealerViewSet(AppBaseViewSet):
                     # ---- Get/Create Place ----
                     place, place_created = Place.objects.get_or_create(
                         name=str(row[col_map["place"]]).strip(),
+                        district=sheet_name if sheet_name != "Sheet1" else None,
                         destination=destination,
                         defaults={"distance": distance_value}
                     )
@@ -174,4 +177,21 @@ class DestinationViewSet(AppBaseViewSet):
     serializer_class = DestinationSerializer
     search_fields = ['name', 'place']        
     ordering_fields = ['name']  
+    
+
+class DestinationEntryViewSet(ModelViewSet):
+    queryset = DestinationEntry.objects.all().order_by("-id")
+
+    def get_serializer_class(self):
+        if self.action in ["create", "update", "partial_update"]:
+            return DestinationEntryWriteSerializer
+        return DestinationEntrySerializer
+
+    # Custom action to create nested entry
+    @action(detail=False, methods=["post"], url_path="create-full")
+    def create_full(self, request):
+        serializer = DestinationEntryWriteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        dest_entry = serializer.save()
+        return Response(DestinationEntrySerializer(dest_entry).data)
     
