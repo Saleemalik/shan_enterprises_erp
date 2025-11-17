@@ -5,7 +5,7 @@ export default function Header() {
   return (
     <header className="w-full h-14 bg-white border-b shadow flex items-center justify-between px-6">
 
-      <h1 className="text-xl font-semibold">Shan Enterprises ERP</h1>
+      <h1 className="text-2xl font-semibold">Shan Enterprises ERP</h1>
 
       <button
         onClick={logout}

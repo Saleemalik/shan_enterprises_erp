@@ -124,7 +124,7 @@ export default function Places() {
     <div className="p-4">
       {/* Page Header */}
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-4xl font-semibold">Places</h1>
+        <h1 className="text-3xl font-semibold">Places</h1>
 
         <div className="flex gap-2">
           {selectedIds.length > 0 && (

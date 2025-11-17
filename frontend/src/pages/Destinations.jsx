@@ -85,7 +85,7 @@ export default function Destination() {
     <div className="p-4">
       {/* ---- Header ---- */}
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-4xl font-semibold">Destinations</h2>
+        <h2 className="text-3xl font-semibold">Destinations</h2>
         <div className="flex  gap-2">
            {/* ---- Bulk Delete Button ---- */}
       {selectedIds.length > 0 && (

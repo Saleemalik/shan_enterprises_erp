@@ -84,7 +84,7 @@ export default function RateRange() {
     <div className="p-4">
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-4xl font-semibold">Rate Ranges</h2>
+        <h2 className="text-3xl font-semibold">Rate Ranges</h2>
 
         <div className="flex gap-2">
           {selectedIds.length > 0 && (
