@@ -7,6 +7,7 @@ export default function Sidebar() {
     { label: "Places", path: "/app/places" },
     { label: "RateRanges", path: "/app/rate-ranges" },
     { label: "Dealers", path: "/app/dealers" },
+    { label: "Destination Entries", path: "/app/destination-entries" },
   ];
 
   return (

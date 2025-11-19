@@ -8,6 +8,8 @@ import Dealers from "./pages/Dealers";
 import Places from "./pages/Places";
 import Destinations from "./pages/Destinations";
 import RateRanges from "./pages/RateRanges";
+import DestinationEntries from "./pages/DestinationEntries";
+import DestinationEntryCreate from "./pages/DestinationEntryCreate";
 
 export default function App() {
   return (
@@ -27,6 +29,10 @@ export default function App() {
           <Route path="places" element={<Places />} />
           <Route path="rate-ranges" element={<RateRanges />} />
           <Route path="dealers" element={<Dealers />} />
+          <Route path="destination-entries" >
+            <Route index element={<DestinationEntries />} />
+            <Route path="create" element={<DestinationEntryCreate />} />
+          </Route> 
         </Route>
       </Routes>
     </Router>

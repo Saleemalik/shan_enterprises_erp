@@ -166,6 +166,49 @@ class DealerViewSet(AppBaseViewSet):
             "destinations_created": created_destinations,
         }, status=200)
         
+    @action(detail=False, methods=["GET"])
+    def filter_by_range(self, request):
+        range_id = request.query_params.get("range_id")
+        if not range_id:
+            return Response({"error": "range_id required"}, status=400)
+
+        try:
+            rr = RateRange.objects.get(id=range_id)
+        except RateRange.DoesNotExist:
+            return Response({"error": "Range not found"}, status=404)
+
+        destination_id = request.query_params.get("destination_id")
+
+        # --- THE FIX: Query places first ---
+        place_qs = Place.objects.filter(
+            distance__gte=rr.from_km,
+            distance__lte=rr.to_km
+        )
+
+        if destination_id:
+            place_qs = place_qs.filter(destination_id=destination_id)
+
+        # Return dealers matched to each place individually
+        rows = place_qs.values(
+            "id",
+            "name",
+            "distance",
+            "dealers__id",
+            "dealers__name",
+        ).order_by("distance", "dealers__name")
+
+        results = []
+        for r in rows:
+            results.append({
+                "dealer_id": r["dealers__id"],
+                "dealer_name": r["dealers__name"],
+                "place_id": r["id"],
+                "place_name": r["name"],
+                "distance": r["distance"],
+            })
+
+        return Response(results)
+    
 class RateRangeViewSet(AppBaseViewSet):
     queryset = RateRange.objects.all().order_by("from_km")
     serializer_class = RateRangeSerializer
