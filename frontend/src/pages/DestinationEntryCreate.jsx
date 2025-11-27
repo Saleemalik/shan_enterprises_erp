@@ -71,11 +71,29 @@ export default function DestinationEntryCreate() {
 
   // add/remove ranges (top-level)
   const addRange = () => {
-    setForm((f) => ({
-      ...f,
-      ranges: [...f.ranges, { rate_range: null, rate: "", dealer_entries: [] }],
-    }));
+    setForm((f) => {
+      let next = {
+        ...f,
+        ranges: [
+          ...f.ranges,
+          {
+            id: crypto.randomUUID(),
+            rate_range: null,
+            rate: "",
+            dealer_entries: [],
+          },
+        ],
+      };
+
+      next.ranges.sort((a, b) => {
+        if (!a.rate_range || !b.rate_range) return 0;
+        return a.rate_range.from_km - b.rate_range.from_km;
+      });
+
+      return next;
+    });
   };
+
   const removeRange = (ri) => {
     setForm((f) => {
       const next = { ...f, ranges: f.ranges.slice() };
@@ -87,11 +105,19 @@ export default function DestinationEntryCreate() {
   // callbacks used by RangeBlock to update nested state
   const updateRangeAt = (ri, newRange) => {
     setForm((f) => {
-      const next = { ...f, ranges: f.ranges.map((r) => ({ ...r })) };
+      let next = { ...f, ranges: f.ranges.map((r) => ({ ...r })) };
       next.ranges[ri] = newRange;
+
+      // sort by slab from_km
+      next.ranges.sort((a, b) => {
+        if (!a.rate_range || !b.rate_range) return 0;
+        return a.rate_range.from_km - b.rate_range.from_km;
+      });
+
       return next;
     });
   };
+
 
   // Submit: prepare nested payload expected by serializers
   const handleSubmit = async () => {
@@ -224,38 +250,47 @@ export default function DestinationEntryCreate() {
         />
       </div>
 
-      <div className="flex justify-between items-center mb-3">
-        <h2 className="text-base font-semibold">Ranges</h2>
-        <button
-          onClick={addRange}
-          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
-        >
-          + Add Range
-        </button>
-      </div>
+     {form.destination && (
+        <>
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="text-base font-semibold">Ranges</h2>
 
-      <div className="space-y-3">
-        {form.ranges.map((range, ri) => (
-          <RangeBlock
-            key={ri}
-            index={ri}
-            range={range}
-            rateRanges={rateRanges}
-            loadingRanges={loadingRanges}
-            onSelectRange={(opt) =>
-              updateRangeAt(ri, {
-                ...range,
-                rate_range: opt,
-                rate: opt.rate,
-                is_mtk: opt.is_mtk,
-              })
-            }
-            onRemoveRange={() => removeRange(ri)}
-            onUpdateRange={(newRange) => updateRangeAt(ri, newRange)}
-            selectedDestinationId={form.destination?.value}
-          />
-        ))}
-      </div>
+            <button
+              onClick={addRange}
+              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
+            >
+              + Add Range
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {form.ranges.map((range, ri) => (
+              <RangeBlock
+                key={range.id}
+                index={ri}
+                range={range}
+                rateRanges={rateRanges}
+                loadingRanges={loadingRanges}
+                onSelectRange={(opt) =>
+                  updateRangeAt(ri, {
+                    ...range,
+                    rate_range: opt,
+                    rate: opt.rate,
+                    is_mtk: opt.is_mtk,
+                  })
+                }
+                onRemoveRange={() => removeRange(ri)}
+                onUpdateRange={(newRange) => updateRangeAt(ri, newRange)}
+                selectedDestinationId={form.destination?.value}
+                usedRateRangeIds={form.ranges
+                  .filter(r => r.rate_range)
+                  .map(r => r.rate_range.value)}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
 
       <div className="flex justify-end mt-5">
         <button

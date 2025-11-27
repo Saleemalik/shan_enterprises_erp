@@ -1,5 +1,6 @@
 import AsyncSelect from "react-select/async";
 import axiosInstance from "../../api/axiosConfig";
+import { useEffect } from "react";
 
 export default function DealerEntriesBlock({
     range,
@@ -45,6 +46,16 @@ export default function DealerEntriesBlock({
         };
         onUpdateRange(next);
     };
+
+    useEffect(() => {
+        // if no dealer rows exist, add one by default
+        debugger
+        if (safeRows().length === 0) {
+            addDealerRow();
+        }
+    }, []); // run only once on mount
+
+    
 
     const removeDealerRow = (di) => {
         const rows = safeRows().filter((_, i) => i !== di);

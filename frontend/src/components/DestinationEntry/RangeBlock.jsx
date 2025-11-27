@@ -30,8 +30,14 @@ export default function RangeBlock({
   onRemoveRange,
   onUpdateRange,
   selectedDestinationId,
+  usedRateRangeIds,
 }) {
   // keep a tiny local state to force re-renders when internal objects updated
+
+  const filteredOptions = rateRanges.filter(
+    r => !usedRateRangeIds.includes(r.value)
+  );
+
 
   return (
     <div className="border rounded p-4 bg-gray-50">
@@ -46,7 +52,7 @@ export default function RangeBlock({
                 Select Range Slab
               </label>
               <Select
-                options={rateRanges}
+                options={filteredOptions}
                 isLoading={loadingRanges}
                 onChange={(opt) => onSelectRange(opt)}
                 placeholder="Choose range slab..."
