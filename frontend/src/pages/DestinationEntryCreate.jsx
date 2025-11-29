@@ -4,6 +4,8 @@ import Select from "react-select";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../api/axiosConfig";
 import RangeBlock from "../components/DestinationEntry/RangeBlock";
+import useFormPersist from "../hooks/useFormPersist";
+
 
 /**
  * DestinationEntryCreate.jsx
@@ -16,14 +18,29 @@ import RangeBlock from "../components/DestinationEntry/RangeBlock";
 export default function DestinationEntryCreate() {
   const navigate = useNavigate();
 
-  const [form, setForm] = useState({
-    destination: null,
-    date: "",
-    letter_note: "",
-    bill_number: "",
-    to_address: "",
-    ranges: [], // each: { rate_range: null|obj, rate, dealer_entries: [...] }
+  const [form, setForm] = useState(() => {
+    const saved = localStorage.getItem("destination-entry-form");
+    const defaults = saved
+      ? JSON.parse(saved)
+      : {
+          date: "",
+          letter_note: "",
+          to_address: "",
+          bill_number: "",
+          destination: null,
+        };
+
+    return {
+      // defaults loaded here
+      ...defaults,
+
+      // this is always empty when starting a new form
+      ranges: [],
+    };
   });
+
+
+  useFormPersist("destination-entry-form", form, setForm);
 
   const [rateRanges, setRateRanges] = useState([]);
   const [loadingRanges, setLoadingRanges] = useState(false);
@@ -169,7 +186,7 @@ export default function DestinationEntryCreate() {
       };
 
       await axiosInstance.post("/destination-entries/create-full/", payload);
-      navigate("/destination-entries");
+      navigate("/app/destination-entries");
     } catch (err) {
       console.error("submit error:", err);
       alert(err.response?.data?.detail || "Failed to submit");
