@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import AsyncSelect from "react-select/async";
-import Select from "react-select";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../api/axiosConfig";
 import RangeBlock from "../components/DestinationEntry/RangeBlock";
 import useFormPersist from "../hooks/useFormPersist";
+import DealerSearchRow from "../components/DealerSearchRow";
 
 
 /**
@@ -197,6 +197,114 @@ export default function DestinationEntryCreate() {
   const updateTopField = (field, value) =>
     setForm((f) => ({ ...f, [field]: value }));
 
+  const calcMt = (bags) => Number((Number(bags || 0) * 0.05).toFixed(3));
+  const calcMtk = (mt, km) => Number((Number(mt || 0) * Number(km || 0)).toFixed(3));
+
+  const addDealer = (entry) => {
+    // entry = { dealer, mda, date, bags }
+    // entry.dealer is the AsyncSelect option produced by loadDealers:
+    // { value: dealer_id, dealer_id, dealer_name, place_id, place_name, distance, rate_range_id, rate, is_mtk, ... }
+
+    const dealerOpt = entry.dealer || {};
+    const rrId = Number(dealerOpt.rate_range_id ?? dealerOpt.rate_range?.value ?? dealerOpt.rate_range?.id);
+    const rate = Number(dealerOpt.rate ?? 0);
+    const is_mtk = !!dealerOpt.is_mtk;
+    const km = Number(dealerOpt.distance ?? 0);
+    const bags = Number(entry.bags ?? 0);
+
+    // normalized dealer entry shape used inside range.dealer_entries
+    const normalizedDealerEntry = {
+      id: crypto.randomUUID(),
+      dealer: {
+        // keep the AsyncSelect-friendly shape so existing code works
+        value: dealerOpt.dealer_id ?? dealerOpt.value,
+        label: `${dealerOpt.dealer_name ?? dealerOpt.label ?? ""} (${dealerOpt.place_name ?? ""})`,
+        // include raw metadata for later use
+        dealer_id: dealerOpt.dealer_id ?? dealerOpt.value,
+        dealer_name: dealerOpt.dealer_name ?? dealerOpt.label,
+        place_id: dealerOpt.place_id,
+        place_name: dealerOpt.place_name,
+        distance: km,
+        rate_range_id: rrId,
+        rate,
+        is_mtk,
+      },
+      despatched_to: `${dealerOpt.dealer_name ?? ""}, ${dealerOpt.place_name ?? ""}`,
+      mda_number: entry.mda || "",
+      date: entry.date || "",
+      no_bags: bags,
+      km,
+      mt: calcMt(bags), // bags * 0.05
+      mtk: calcMtk(calcMt(bags), km), // mt * km
+      amount: is_mtk
+        ? Number((rate * calcMtk(calcMt(bags), km)).toFixed(2))
+        : Number((rate * calcMt(bags)).toFixed(2)),
+      description: entry.description || "FACTOM FOS",
+      remarks: entry.remarks || "",
+    };
+
+    setForm((prev) => {
+      // try to find existing range block by several possible shapes
+      const idx = prev.ranges.findIndex((r) => {
+        const rr = r.rate_range;
+        if (!rr) return false;
+        // possible shapes: rr === primitive id, rr.id, rr.value
+        return (
+          rr === rrId ||
+          rr?.id === rrId ||
+          rr?.value === rrId ||
+          // sometimes rr may be nested deeper (e.g., { rate_range: { value: id } })
+          (r.rate_range?.rate_range?.value === rrId)
+        );
+      });
+
+      // if found, append to dealer_entries
+      if (idx !== -1) {
+        const updated = prev.ranges.map((r) => ({ ...r, dealer_entries: [...(r.dealer_entries || [])] }));
+        updated[idx].dealer_entries.push(normalizedDealerEntry);
+
+        // also update totals if you keep them in range (optional)
+        return { ...prev, ranges: updated };
+      }
+
+      // not found -> create new normalized range block
+      const newRange = {
+        id: crypto.randomUUID(),
+        // normalized rate_range object: include both id and value to match any future checks
+        rate_range: {
+          id: rrId,
+          value: rrId,
+          rate,
+          is_mtk,
+          // if you have from_km/to_km in rateRanges, you can try to find them:
+          // we'll attempt to populate from fetched rateRanges if available
+          from_km: (() => {
+            const rr = rateRanges.find((x) => x.id === rrId || x.value === rrId);
+            return rr?.from_km ?? null;
+          })(),
+          to_km: (() => {
+            const rr = rateRanges.find((x) => x.id === rrId || x.value === rrId);
+            return rr?.to_km ?? null;
+          })(),
+        },
+        rate: rate,
+        is_mtk,
+        dealer_entries: [normalizedDealerEntry],
+      };
+
+      const nextRanges = [...prev.ranges, newRange];
+
+      // keep ranges sorted by from_km if available, otherwise by rate_range.id
+      nextRanges.sort((a, b) => {
+        const aFrom = a.rate_range?.from_km ?? a.rate_range?.id ?? a.rate_range?.value ?? 0;
+        const bFrom = b.rate_range?.from_km ?? b.rate_range?.id ?? b.rate_range?.value ?? 0;
+        return (aFrom || 0) - (bFrom || 0);
+      });
+
+      return { ...prev, ranges: nextRanges };
+    });
+  };
+
   return (
     <div className="">
       <div className="flex items-center justify-between mb-3">
@@ -268,7 +376,12 @@ export default function DestinationEntryCreate() {
       </div>
 
      {form.destination && (
-        <>
+       
+       <>
+            <DealerSearchRow
+              destinationId={form.destination?.value}
+              onAdd={addDealer}
+            />
           <div className="flex justify-between items-center mb-3">
             <h2 className="text-base font-semibold">Ranges</h2>
 

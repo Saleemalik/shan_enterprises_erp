@@ -7,6 +7,8 @@ from rest_framework.response import Response
 from django.db import transaction
 from rest_framework import status
 from rest_framework.viewsets import ModelViewSet
+from django.db.models import Q, F, Prefetch
+
 
 
 def safe_float(val):
@@ -209,6 +211,68 @@ class DealerViewSet(AppBaseViewSet):
 
         return Response(results)
     
+
+    
+    @action(detail=False, methods=["GET"], url_path="by-destination")
+    def by_destination(self, request):
+        dest_id = request.query_params.get("destination_id")
+        if not dest_id:
+            return Response({"detail": "destination_id is required"}, status=400)
+
+        search = request.query_params.get("search", "").strip().lower()
+
+        # Prefetch dealers for places (unfiltered so we can match dealer names too)
+        dealer_prefetch = Prefetch(
+            "dealers",
+            queryset=Dealer.objects.filter(active=True).order_by("name"),
+            to_attr="prefetched_dealers"
+        )
+
+        # Get all places for destination (we will apply search logic in Python)
+        places = Place.objects.filter(destination_id=dest_id).prefetch_related(dealer_prefetch).order_by("distance")
+
+        results = []
+
+        for place in places:
+            place_matches = False
+            if search:
+                # check place-level match
+                if search in (place.name or "").lower() or search in (place.district or "").lower():
+                    place_matches = True
+
+            for dealer in getattr(place, "prefetched_dealers", []):
+                # If there's a search term, allow match if either dealer or place matches
+                if search:
+                    dealer_matches = (
+                        search in (dealer.name or "").lower() or
+                        search in (dealer.code or "").lower()
+                    )
+                    if not (dealer_matches or place_matches):
+                        continue  # skip this pair
+                # find RateRange for this place distance
+                rr = RateRange.objects.filter(
+                    from_km__lte=place.distance,
+                    to_km__gte=place.distance
+                ).first()
+
+                results.append({
+                    "dealer_id": dealer.id,
+                    "dealer_code": dealer.code,
+                    "dealer_name": dealer.name,
+                    "place_id": place.id,
+                    "place_name": place.name,
+                    "distance": place.distance,
+                    "district": place.district,
+                    "rate_range_id": rr.id if rr else None,
+                    "rate": rr.rate if rr else None,
+                    "is_mtk": rr.is_mtk if rr else None,
+                })
+
+        # sort and return
+        results.sort(key=lambda x: (x["distance"] or 0, x["dealer_name"] or ""))
+
+        return Response(results)
+
 class RateRangeViewSet(AppBaseViewSet):
     queryset = RateRange.objects.all().order_by("from_km")
     serializer_class = RateRangeSerializer
