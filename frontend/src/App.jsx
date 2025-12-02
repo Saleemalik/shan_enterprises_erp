@@ -10,6 +10,7 @@ import Destinations from "./pages/Destinations";
 import RateRanges from "./pages/RateRanges";
 import DestinationEntries from "./pages/DestinationEntries";
 import DestinationEntryCreate from "./pages/DestinationEntryCreate";
+import DestinationEntryEdit from "./pages/DestinationEntryEdit";
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
           <Route path="destination-entries" >
             <Route index element={<DestinationEntries />} />
             <Route path="create" element={<DestinationEntryCreate />} />
+            <Route path=":id" element={<DestinationEntryEdit />} />
           </Route> 
         </Route>
       </Routes>

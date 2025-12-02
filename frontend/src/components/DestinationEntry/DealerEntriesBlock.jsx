@@ -49,7 +49,6 @@ export default function DealerEntriesBlock({
 
     useEffect(() => {
         // if no dealer rows exist, add one by default
-        debugger
         if (safeRows().length === 0) {
             addDealerRow();
         }

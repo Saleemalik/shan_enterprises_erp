@@ -111,7 +111,7 @@ class DestinationEntrySerializer(serializers.ModelSerializer):
         return None
 
 class DestinationEntryWriteSerializer(serializers.ModelSerializer):
-    ranges = RangeEntryWriteSerializer(many=True)
+    range_entries = RangeEntryWriteSerializer(many=True)
 
     class Meta:
         model = DestinationEntry
@@ -121,11 +121,11 @@ class DestinationEntryWriteSerializer(serializers.ModelSerializer):
             "bill_number",
             "date",
             "to_address",
-            "ranges"
+            "range_entries",
         ]
 
     def create(self, validated_data):
-        ranges_data = validated_data.pop("ranges")
+        ranges_data = validated_data.pop("range_entries")
         dest_entry = DestinationEntry.objects.create(**validated_data)
         self._create_ranges(dest_entry, ranges_data)
         return dest_entry
@@ -136,9 +136,8 @@ class DestinationEntryWriteSerializer(serializers.ModelSerializer):
         instance.save()
 
         # Clear & recreate child objects
-        instance.rangeentry_set.all().delete()
-        self._create_ranges(instance, validated_data.get("ranges", []))
-
+        instance.range_entries.all().delete()
+        self._create_ranges(instance, validated_data.get("range_entries", []))
         return instance
 
     # --------------------------------
