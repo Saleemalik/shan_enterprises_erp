@@ -1,5 +1,5 @@
 import AsyncSelect from "react-select/async";
-import axiosInstance from "../api/axiosConfig";
+import axiosInstance from "../../api/axiosConfig";
 import { useState } from "react";
 
 export default function DealerSearchRow({ destinationId, onAdd }) {

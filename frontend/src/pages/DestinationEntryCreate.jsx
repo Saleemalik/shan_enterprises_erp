@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import axiosInstance from "../api/axiosConfig";
 import RangeBlock from "../components/DestinationEntry/RangeBlock";
 import useFormPersist from "../hooks/useFormPersist";
-import DealerSearchRow from "../components/DealerSearchRow";
+import DealerSearchRow from "../components/DestinationEntry/DealerSearchRow";
 
 
 /**
