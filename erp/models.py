@@ -63,7 +63,7 @@ class DestinationEntry(models.Model):
 
 
 class RangeEntry(models.Model):
-    destination_entry = models.ForeignKey(DestinationEntry, on_delete=models.CASCADE, related_name="ranges")
+    destination_entry = models.ForeignKey(DestinationEntry, on_delete=models.CASCADE, related_name="range_entries")
     rate_range = models.ForeignKey(RateRange, on_delete=models.SET_NULL, null=True)
 
     rate = models.FloatField()
@@ -77,7 +77,7 @@ class RangeEntry(models.Model):
 
 
 class DealerEntry(models.Model):
-    range_entry = models.ForeignKey(RangeEntry, on_delete=models.CASCADE)
+    range_entry = models.ForeignKey(RangeEntry, on_delete=models.CASCADE, related_name="dealer_entries")
     dealer = models.ForeignKey(Dealer, on_delete=models.SET_NULL, null=True)
 
     despatched_to = models.CharField(max_length=255, null=True, blank=True)

@@ -97,7 +97,7 @@ class DestinationEntrySerializer(serializers.ModelSerializer):
 
     def get_rate_ranges(self, obj):
         labels = []
-        for re in obj.ranges.select_related("rate_range").all():
+        for re in obj.range_entries.select_related("rate_range").all():
             rr = re.rate_range
             if rr:
                 from_km = int(rr.from_km) if rr.from_km.is_integer() else rr.from_km
@@ -157,3 +157,66 @@ class DestinationEntryWriteSerializer(serializers.ModelSerializer):
                 DealerEntry(range_entry=range_entry, **d)
                 for d in dealer_entries_data
             ])
+
+
+class DealerEntrySerializer(serializers.ModelSerializer):
+    dealer_name = serializers.CharField(source="dealer.name", read_only=True)
+
+    class Meta:
+        model = DealerEntry
+        fields = [
+            "id",
+            "dealer",
+            "dealer_name",
+            "despatched_to",
+            "km",
+            "no_bags",
+            "rate",
+            "mt",
+            "mtk",
+            "amount",
+            "mda_number",
+            "date",
+            "description",
+            "remarks",
+        ]
+
+
+class RangeEntrySerializer(serializers.ModelSerializer):
+    rate_range_display = serializers.SerializerMethodField()
+    dealer_entries = DealerEntrySerializer(many=True, read_only=True)
+
+    class Meta:
+        model = RangeEntry
+        fields = [
+            "id",
+            "rate_range",
+            "rate_range_display",
+            "rate",
+            "total_bags",
+            "total_mt",
+            "total_mtk",
+            "total_amount",
+            "dealer_entries",
+        ]
+
+    def get_rate_range_display(self, obj):
+        rr = obj.rate_range
+        return f"{rr.from_km}-{rr.to_km}" if rr else None
+
+class DestinationEntryDetailSerializer(serializers.ModelSerializer):
+    range_entries = RangeEntrySerializer(many=True, read_only=True)
+    destination = DestinatonSerializerReadOnly()
+
+    class Meta:
+        model = DestinationEntry
+        fields = [
+            "id",
+            "destination",
+            "date",
+            "letter_note",
+            "to_address",
+            "bill_number",
+            "main_bill",
+            "range_entries",
+        ]

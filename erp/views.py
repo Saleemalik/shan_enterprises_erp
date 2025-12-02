@@ -1,5 +1,5 @@
 from .models import Dealer, Place, Destination, RateRange, DestinationEntry
-from .serializers import DealerSerializer, PlaceSerializer, DestinationSerializer, RateRangeSerializer, DestinationEntrySerializer, DestinationEntryWriteSerializer
+from .serializers import DealerSerializer, PlaceSerializer, DestinationSerializer, RateRangeSerializer, DestinationEntrySerializer, DestinationEntryWriteSerializer, DestinationEntryDetailSerializer
 from .base import AppBaseViewSet
 import pandas as pd
 from rest_framework.decorators import action
@@ -301,4 +301,9 @@ class DestinationEntryViewSet(ModelViewSet):
         serializer.is_valid(raise_exception=True)
         dest_entry = serializer.save()
         return Response(DestinationEntrySerializer(dest_entry).data)
+    
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = DestinationEntryDetailSerializer(instance)
+        return Response(serializer.data)
     
