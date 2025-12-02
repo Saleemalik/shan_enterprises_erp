@@ -72,13 +72,43 @@ class RangeEntryWriteSerializer(serializers.ModelSerializer):
             "dealer_entries",
         ]
 
+class DestinatonSerializerReadOnly(serializers.ModelSerializer):
+    class Meta:
+        model = Destination
+        fields = ['id', 'name', 'is_garage']
+
 class DestinationEntrySerializer(serializers.ModelSerializer):
+    rate_ranges = serializers.SerializerMethodField()
+    main_bill = serializers.SerializerMethodField()
+    destination = DestinatonSerializerReadOnly(read_only=True)
+
     class Meta:
         model = DestinationEntry
         fields = [
-            "id", "destination", "letter_note", "bill_number",
-            "date", "to_address", "main_bill"
+            "id",
+            "destination",
+            
+            "date",
+            "to_address",
+            "bill_number",
+            "rate_ranges",
+            "main_bill",
         ]
+
+    def get_rate_ranges(self, obj):
+        labels = []
+        for re in obj.ranges.select_related("rate_range").all():
+            rr = re.rate_range
+            if rr:
+                from_km = int(rr.from_km) if rr.from_km.is_integer() else rr.from_km
+                to_km = int(rr.to_km) if rr.to_km.is_integer() else rr.to_km
+                labels.append(f"{from_km}-{to_km}")
+        return labels
+
+    def get_main_bill(self, obj):
+        if obj.main_bill:
+            return {"bill_number": obj.main_bill.bill_number}
+        return None
 
 class DestinationEntryWriteSerializer(serializers.ModelSerializer):
     ranges = RangeEntryWriteSerializer(many=True)
