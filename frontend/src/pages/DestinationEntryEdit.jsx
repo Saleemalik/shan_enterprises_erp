@@ -5,7 +5,7 @@ import axiosInstance from "../api/axiosConfig";
 import RangeBlock from "../components/DestinationEntry/RangeBlock";
 import useFormPersist from "../hooks/useFormPersist";
 import DealerSearchRow from "../components/DestinationEntry/DealerSearchRow";
-
+import { API_BASE } from "../api/axiosConfig";
 
 /**
  * DestinationEntryEdit.jsx
@@ -190,29 +190,45 @@ export default function DestinationEntryEdit() {
     try {
       const payload = {
         destination: form.destination.value,
-        date: form.date,
-        bill_number: form.bill_number,
         letter_note: form.letter_note,
+        bill_number: form.bill_number,
+        date: form.date,
         to_address: form.to_address,
+        range_entries: form.ranges.map((r) => {
+          const dealer_entries = (r.dealer_entries || []).map((d) => ({
+            dealer: d.dealer?.value ?? d.dealer,
+            despatched_to: d.despatched_to || "",
+            km: Number(d.km || 0),
+            no_bags: Number(d.no_bags || 0),
+            rate: Number(r.rate || 0),
+            mt: Number(d.mt || 0),
+            mtk: Number(d.mtk || 0),
+            amount: Number(d.amount || 0),
+            mda_number: d.mda_number || "",
+            date: d.date || "",
+            description: d.description || "FACTOM FOS",
+            remarks: d.remarks || "",
+          }));
 
-        range_entries: form.ranges.map(r => ({
-          rate_range: r.rate_range.value,
-          rate: Number(r.rate),
-          dealer_entries: (r.dealer_entries || []).map(d => ({
-            dealer: d.dealer.value,
-            despatched_to: d.despatched_to,
-            km: d.km,
-            no_bags: d.no_bags,
-            rate: r.rate,
-            mt: d.mt,
-            mtk: d.mtk,
-            amount: d.amount,
-            mda_number: d.mda_number,
-            date: d.date,
-            description: d.description,
-            remarks: d.remarks,
-          })),
-        })),
+          return {
+            rate_range: r.rate_range?.value ?? null,
+            rate: Number(r.rate || 0),
+            total_bags: dealer_entries.reduce(
+              (s, x) => s + Number(x.no_bags || 0),
+              0
+            ),
+            total_mt: dealer_entries.reduce((s, x) => s + Number(x.mt || 0), 0),
+            total_mtk: dealer_entries.reduce(
+              (s, x) => s + Number(x.mtk || 0),
+              0
+            ),
+            total_amount: dealer_entries.reduce(
+              (s, x) => s + Number(x.amount || 0),
+              0
+            ),
+            dealer_entries,
+          };
+        }),
       };
 
       await axiosInstance.put(
@@ -221,7 +237,6 @@ export default function DestinationEntryEdit() {
       );
       //reload app
       alert("Updated successfully");
-      navigate(-1);
 
     } catch (err) {
       console.error(err);
@@ -229,6 +244,16 @@ export default function DestinationEntryEdit() {
     }
   };
 
+  const handlePrint = async () => {
+
+    const response = await axiosInstance.get(
+      `/destination-entries/${id}/print/`,
+      { responseType: "blob" }
+    );
+
+    const fileURL = URL.createObjectURL(response.data);
+    window.open(fileURL);
+  };
 
   // top-level update helpers
   const updateTopField = (field, value) =>
@@ -459,7 +484,13 @@ export default function DestinationEntryEdit() {
       )}
 
 
-      <div className="flex justify-end mt-5">
+      <div className="flex justify-end mt-5 gap-2">
+        <button
+          onClick={handlePrint}
+          className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm"
+        >
+          Print
+        </button>
         <button
           onClick={handleSubmit}
           className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm"

@@ -148,7 +148,7 @@ export default function DestinationEntryCreate() {
         bill_number: form.bill_number,
         date: form.date,
         to_address: form.to_address,
-        ranges: form.ranges.map((r) => {
+        range_entries: form.ranges.map((r) => {
           const dealer_entries = (r.dealer_entries || []).map((d) => ({
             dealer: d.dealer?.value ?? d.dealer,
             despatched_to: d.despatched_to || "",
@@ -185,8 +185,12 @@ export default function DestinationEntryCreate() {
         }),
       };
 
-      await axiosInstance.post("/destination-entries/create-full/", payload);
-      navigate("/app/destination-entries");
+      const result = await axiosInstance.post("/destination-entries/create-full/", payload);
+      const id = result.data.id;
+     
+      navigate("/app/destination-entries/" + id, {
+        state: { success: true, message: "Destination entry created successfully!" },
+      });
     } catch (err) {
       console.error("submit error:", err);
       alert(err.response?.data?.detail || "Failed to submit");

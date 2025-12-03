@@ -300,7 +300,7 @@ class DestinationEntryViewSet(ModelViewSet):
         serializer = DestinationEntryWriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         dest_entry = serializer.save()
-        return Response(DestinationEntrySerializer(dest_entry).data)
+        return Response({"id": dest_entry.id}, status=status.HTTP_201_CREATED)
     
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
