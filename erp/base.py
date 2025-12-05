@@ -3,14 +3,20 @@ from rest_framework import viewsets, filters
 from rest_framework.permissions import IsAuthenticated
 from .mixins import SoftDeleteMixin, BulkDeleteMixin
 
-class AppBaseViewSet(SoftDeleteMixin, BulkDeleteMixin, viewsets.ModelViewSet):
+#  ModelViewSet with common features for the ERP application
+class BaseViewSet(viewsets.ModelViewSet):
     """
     Base class for all ERP ViewSets.
     Includes:
-     - Soft delete
-     - Bulk delete
      - Search / Ordering
      - Login required
     """
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+
+class AppBaseViewSet(SoftDeleteMixin, BulkDeleteMixin, BaseViewSet):
+    """
+    Base class for all ERP ViewSets with soft delete and bulk delete features.
+    Inherits from BaseViewSet.
+    """
+    pass

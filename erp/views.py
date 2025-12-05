@@ -1,14 +1,25 @@
-from .models import Dealer, Place, Destination, RateRange, DestinationEntry
+import os
+from .models import Dealer, Place, Destination, RateRange, DestinationEntry, RangeEntry, DealerEntry
 from .serializers import DealerSerializer, PlaceSerializer, DestinationSerializer, RateRangeSerializer, DestinationEntrySerializer, DestinationEntryWriteSerializer, DestinationEntryDetailSerializer
-from .base import AppBaseViewSet
+from .base import AppBaseViewSet, BaseViewSet
 import pandas as pd
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db import transaction
 from rest_framework import status
-from rest_framework.viewsets import ModelViewSet
-from django.db.models import Q, F, Prefetch
+from rest_framework.exceptions import APIException
 
+from django.db.models import Prefetch
+from django.http import FileResponse
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import mm
+from reportlab.platypus import KeepTogether
+from io import BytesIO
+from num2words import num2words
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
 
 def safe_float(val):
@@ -286,7 +297,7 @@ class DestinationViewSet(AppBaseViewSet):
     ordering_fields = ['name']  
     
 
-class DestinationEntryViewSet(ModelViewSet):
+class DestinationEntryViewSet(BaseViewSet):
     queryset = DestinationEntry.objects.all().order_by("-id")
 
     def get_serializer_class(self):
@@ -307,3 +318,182 @@ class DestinationEntryViewSet(ModelViewSet):
         serializer = DestinationEntryDetailSerializer(instance)
         return Response(serializer.data)
     
+    @action(detail=True, methods=["GET"])
+    def print(self, request, pk=None):
+        pdf_bytes = self.generate_pdf(pk)  # we re-use your logic below
+
+        return FileResponse(
+            pdf_bytes,
+            as_attachment=False,
+            filename=f"destination-entry-{pk}.pdf",
+            content_type="application/pdf",
+        )
+
+
+    def generate_pdf(self, entry_id):
+
+        # fetch main entry
+        entry = DestinationEntry.objects.select_related("destination").get(id=entry_id)
+        destination = entry.destination
+        bill_number = entry.bill_number
+        date = entry.date
+        letter_note = entry.letter_note
+        to_address = entry.to_address
+
+        # pdf setup
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=landscape(A4),
+            leftMargin=20,
+            rightMargin=20,
+            topMargin=115,
+            bottomMargin=80,
+        )
+
+        # STYLES
+        styles = getSampleStyleSheet()
+        styles.add(ParagraphStyle(name='Small', fontSize=8, leading=10))
+        styles.add(ParagraphStyle(name='NormalBold', fontSize=10, leading=11, fontName='Helvetica-Bold'))
+        styles.add(ParagraphStyle(name='TitleBold', fontSize=13, leading=14, fontName='Helvetica-Bold', alignment=TA_LEFT))
+        styles.add(ParagraphStyle(name='CustomNormal', fontSize=10, leading=12))
+        styles.add(ParagraphStyle(name='CenterBold', fontSize=10, fontName='Helvetica-Bold', alignment=TA_CENTER))
+
+        elements = []
+
+        # helper trim
+        def trim(text, max_len=32):
+            if not text:
+                return ""
+            return text if len(text) <= max_len else text[:max_len] + "…"
+
+        # company header
+        left_column = [
+            Paragraph("GSTIN: 32ACNFS 8060K1ZP", styles['Small']),
+            Paragraph("M/s. SHAN ENTERPRISES", styles['TitleBold']),
+            Paragraph("Clearing & Transporting contractor", styles['CustomNormal']),
+            Paragraph("21-4185, C-Meenchanda gate Calicut - 673018", styles['CustomNormal']),
+            Paragraph("Mob: 9447004108", styles['CustomNormal']),
+        ]
+
+        to_split = to_address.split("\n") if to_address else []
+        right_column = [Paragraph(line, styles['CustomNormal']) for line in to_split] + [
+            Spacer(1, 4),
+            Paragraph(f"Date: {date}", styles['CustomNormal']),
+        ]
+
+        # BILL BLOCK
+        elements.append(Paragraph(f"Bill No.: {bill_number}", styles["CustomNormal"]))
+        elements.append(Spacer(1, 4))
+        elements.append(Paragraph("Sir,", styles["CustomNormal"]))
+        elements.append(Paragraph(letter_note if letter_note else "Please find the details below:", styles["CustomNormal"]))
+        elements.append(Spacer(1, 10))
+
+        # ranges
+        ranges = RangeEntry.objects.filter(destination_entry=entry)
+
+        page_width, _ = landscape(A4)
+        usable_width = page_width - doc.leftMargin - doc.rightMargin
+        
+        def clean_km(v):
+            return int(v) if float(v).is_integer() else v
+
+        for range_entry in ranges:
+            rr = RateRange.objects.get(id=range_entry.rate_range_id)
+            
+            # Range Title
+            range_title = f"{destination.name.upper()} &nbsp; {clean_km(rr.from_km)} - {clean_km(rr.to_km)}"
+            range_title_cont = f"{range_title} (Contd.)"
+
+
+            # elements.append(Paragraph(range_title, styles['CenterBold']))
+            # elements.append(Spacer(1, 3))
+
+            dealer_entries = DealerEntry.objects.filter(range_entry=range_entry)
+
+            table_data = [[
+                "SL NO", "Date", "MDA NO", "Description", "Despatched to",
+                "Bag", "MT", "KM", "MTK", "Rate", "Amount", "Remarks"
+            ]]
+
+            for i, d in enumerate(dealer_entries, start=1):
+                table_data.append([
+                    str(i),
+                    str(d.date),
+                    d.mda_number,
+                    trim(d.description),
+                    trim(d.despatched_to),
+                    d.no_bags,
+                    f"{d.mt:.3f}",
+                    d.km,
+                    f"{d.mtk:.2f}",
+                    f"{range_entry.rate:.2f}",
+                    f"{d.amount:.2f}",
+                    Paragraph(d.remarks or "", styles['CustomNormal'])
+                ])
+
+            # Total Row
+            table_data.append([
+                "", "", "", "", "TOTAL",
+                range_entry.total_bags,
+                f"{range_entry.total_mt:.3f}",
+                "",
+                f"{range_entry.total_mtk:.2f}",
+                f"{range_entry.rate:.2f}",
+                f"{range_entry.total_amount:.2f}",
+                ""
+            ])
+
+            
+
+            col_widths = [30, 45, 55, 70, 180, 35, 40, 40, 45, 40, 50, 40]
+            scale = (usable_width * 0.98) / sum(col_widths)
+            col_widths = [w * scale for w in col_widths]
+
+            table = Table(table_data, colWidths=col_widths, repeatRows=1)
+            table.setStyle(TableStyle([
+                ('GRID', (0,0), (-1,-1), 0.7, colors.black),
+                ('BACKGROUND', (0,0), (-1,0), colors.grey),
+                ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+                ('FONT', (0,0), (-1,0), 'Helvetica-Bold'),
+                ('BACKGROUND', (0,-1), (-1,-1), colors.lightgrey),
+                ('FONT', (0,-1), (-1,-1), 'Helvetica-Bold'),
+                ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                ('LEFTPADDING', (0,0), (-1,-1), 3),
+                ('RIGHTPADDING', (0,0), (-1,-1), 3),
+            ]))
+
+            block = KeepTogether([Paragraph(range_title, styles['CenterBold']), Spacer(1, 3), table, Spacer(1, 12)])
+            elements.append(block)
+
+        elements.append(Spacer(1, 20))
+
+        # HEADER & FOOTER DRAW
+        def draw_header_footer(canvas, doc):
+            canvas.saveState()
+
+            header_table = Table(
+                [[left_column, "", right_column]],
+                colWidths=[480, 40, 300]
+            )
+            hw, hh = header_table.wrap(doc.width, doc.topMargin)
+            header_table.drawOn(canvas, doc.leftMargin, doc.height + doc.topMargin - hh + 40)
+
+            footer_data = [[
+                Paragraph("Passed by", styles['CustomNormal']),
+                "",
+                Paragraph("Officer in charge", styles['CustomNormal']),
+                "",
+                Paragraph("Signature of contractor", styles['CustomNormal'])
+            ]]
+
+            footer_table = Table(footer_data, colWidths=[140, 120, 140, 120, 140])
+            fw, fh = footer_table.wrap(doc.width, doc.bottomMargin)
+            footer_table.drawOn(canvas, doc.leftMargin, 15 * mm)
+
+            canvas.restoreState()
+
+        doc.build(elements, onFirstPage=draw_header_footer, onLaterPages=draw_header_footer)
+
+        buffer.seek(0)
+        return buffer
