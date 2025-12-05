@@ -68,35 +68,35 @@ class BreakableRangeBlock(Flowable):
 
 
     def split(self, availWidth, availHeight):
-        """
-        Called when block doesn't fit. We must split the table rows.
-        """
-        # Compute height with appropriate title
         title_height = self.title_h if self._first else self.cont_h
-        available_for_table = availHeight - title_height
+        full_needed = title_height + self.table_h + 6
 
-        # Ask table what rows fit
+        # CASE 1: First time placing this block AND table does not fit
+        # → Move to next page (NO SPLIT ALLOWED)
+        if self._first and full_needed > availHeight:
+            # We tell ReportLab: don't split this now → move to next page
+            # BUT BE CAREFUL — only do this once
+            self._first = False  # Mark that next time it is a continuation
+            return []
+
+        # CASE 2: Now table is being placed on NEXT PAGE but still too large
+        # → Splitting is allowed here
+        available_for_table = availHeight - title_height - 6
+        if available_for_table <= 0:
+            return []
+
+        # Perform normal split
         parts = self.table.split(availWidth, available_for_table)
-        if not parts:
-            return []  # means cannot split; avoid infinite loop
 
-        # First part -> same block, drawing only first part of table
-        first_block = BreakableRangeBlock(
-            self.title,
-            self.title_cont,
-            parts[0],
-            self.style
-        )
-        first_block._first = self._first  # continue correct title mode
+        if not parts or len(parts) == 1:
+            return []
 
-        # Second part -> continuation block with (Contd.)
-        second_block = BreakableRangeBlock(
-            self.title,  # input same title
-            self.title_cont,
-            parts[1],
-            self.style
-        )
-        second_block._first = False  # next page title_cont
+        # Create continuation blocks
+        first_block = BreakableRangeBlock(self.title, self.title_cont, parts[0], self.style)
+        first_block._first = False
+
+        second_block = BreakableRangeBlock(self.title, self.title_cont, parts[1], self.style)
+        second_block._first = False
 
         return [first_block, second_block]
 
