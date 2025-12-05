@@ -20,6 +20,7 @@ from reportlab.platypus import KeepTogether
 from io import BytesIO
 from num2words import num2words
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
+from reportlab.platypus import Flowable, Paragraph, KeepTogether
 
 
 def safe_float(val):
@@ -32,6 +33,89 @@ def safe_float(val):
         return float(val)
     except:
         return 0
+class BreakableRangeBlock(Flowable):
+    def __init__(self, title, title_cont, table, style):
+        super().__init__()
+        self.title = title
+        self.title_cont = title_cont
+        self.table = table
+        self.style = style
+        self._first = True
+        self.width = 0
+        self.height = 0
+
+    def wrap(self, availWidth, availHeight):
+        self.width = availWidth
+
+        # title sizes
+        p = Paragraph(self.title, self.style)
+        _, self.title_h = p.wrap(availWidth, availHeight)
+
+        pc = Paragraph(self.title_cont, self.style)
+        _, self.cont_h = pc.wrap(availWidth, availHeight)
+
+        # table measured height
+        table_w, table_h = self.table.wrap(availWidth, availHeight)
+
+        # Store for draw
+        self.table_h = table_h
+
+        # Final block height: title + small space + table
+        top_title_height = self.title_h if self._first else self.cont_h
+
+        self.height = top_title_height + table_h + 6  # 6 = small spacing
+        return (availWidth, self.height)
+
+
+    def split(self, availWidth, availHeight):
+        """
+        Called when block doesn't fit. We must split the table rows.
+        """
+        # Compute height with appropriate title
+        title_height = self.title_h if self._first else self.cont_h
+        available_for_table = availHeight - title_height
+
+        # Ask table what rows fit
+        parts = self.table.split(availWidth, available_for_table)
+        if not parts:
+            return []  # means cannot split; avoid infinite loop
+
+        # First part -> same block, drawing only first part of table
+        first_block = BreakableRangeBlock(
+            self.title,
+            self.title_cont,
+            parts[0],
+            self.style
+        )
+        first_block._first = self._first  # continue correct title mode
+
+        # Second part -> continuation block with (Contd.)
+        second_block = BreakableRangeBlock(
+            self.title,  # input same title
+            self.title_cont,
+            parts[1],
+            self.style
+        )
+        second_block._first = False  # next page title_cont
+
+        return [first_block, second_block]
+
+    def draw(self):
+
+        # Choose heading
+        p = Paragraph(self.title if self._first else self.title_cont, self.style)
+
+        # Wrap title
+        w, h = p.wrap(self.width, self.title_h)
+
+        # Draw title at VERY TOP CENTER
+        p.drawOn(self.canv, (self.width - w)/2, self.table_h + 6)
+
+        # Draw table directly under title
+        self.table.drawOn(self.canv, 0, 0)
+
+        self._first = False
+
 
 class PlaceViewSet(AppBaseViewSet):
     queryset = Place.objects.all().order_by("name")
@@ -463,8 +547,16 @@ class DestinationEntryViewSet(BaseViewSet):
                 ('RIGHTPADDING', (0,0), (-1,-1), 3),
             ]))
 
-            block = KeepTogether([Paragraph(range_title, styles['CenterBold']), Spacer(1, 3), table, Spacer(1, 12)])
+            block = BreakableRangeBlock(
+                title=range_title,
+                title_cont=range_title_cont,
+                table=table,
+                style=styles['CenterBold']
+            )
+
             elements.append(block)
+            elements.append(Spacer(1, 12))
+
 
         elements.append(Spacer(1, 20))
 
