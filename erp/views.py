@@ -43,6 +43,9 @@ class BreakableRangeBlock(Flowable):
         self._first = True
         self.width = 0
         self.height = 0
+        self.top_padding = 2      # ↓ Reduced (was 8–12)
+        self.bottom_padding = 4   # ↓ Reduced (was 12–20)
+
 
     def wrap(self, availWidth, availHeight):
         self.width = availWidth
@@ -63,8 +66,9 @@ class BreakableRangeBlock(Flowable):
         # Final block height: title + small space + table
         top_title_height = self.title_h if self._first else self.cont_h
 
-        self.height = top_title_height + table_h + 6  # 6 = small spacing
+        self.height = top_title_height + self.table_h + self.top_padding + self.bottom_padding
         return (availWidth, self.height)
+
 
 
     def split(self, availWidth, availHeight):
@@ -109,8 +113,8 @@ class BreakableRangeBlock(Flowable):
         w, h = p.wrap(self.width, self.title_h)
 
         # Draw title at VERY TOP CENTER
-        p.drawOn(self.canv, (self.width - w)/2, self.table_h + 6)
-
+        p.drawOn(self.canv, (self.width - w)/2, self.table_h + self.bottom_padding)
+        
         # Draw table directly under title
         self.table.drawOn(self.canv, 0, 0)
 
@@ -431,7 +435,7 @@ class DestinationEntryViewSet(BaseViewSet):
             pagesize=landscape(A4),
             leftMargin=20,
             rightMargin=20,
-            topMargin=115,
+            topMargin=120,
             bottomMargin=80,
         )
 
@@ -536,11 +540,9 @@ class DestinationEntryViewSet(BaseViewSet):
 
             table = Table(table_data, colWidths=col_widths, repeatRows=1)
             table.setStyle(TableStyle([
-                ('GRID', (0,0), (-1,-1), 0.7, colors.black),
-                ('BACKGROUND', (0,0), (-1,0), colors.grey),
+                ('GRID', (0,0), (-1,-1), 0.7, colors.black),               
                 ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-                ('FONT', (0,0), (-1,0), 'Helvetica-Bold'),
-                ('BACKGROUND', (0,-1), (-1,-1), colors.lightgrey),
+                ('FONT', (0,0), (-1,0), 'Helvetica-Bold'),               
                 ('FONT', (0,-1), (-1,-1), 'Helvetica-Bold'),
                 ('VALIGN', (0,0), (-1,-1), 'TOP'),
                 ('LEFTPADDING', (0,0), (-1,-1), 3),
