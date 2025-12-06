@@ -199,7 +199,12 @@ export default function DestinationEntryCreate() {
 
   // top-level update helpers
   const updateTopField = (field, value) =>
-    setForm((f) => ({ ...f, [field]: value }));
+    setForm((f) => {
+      if (field === "destination" && value?.value !== f.destination?.value) {
+        return { ...f, destination: value, ranges: [] }; // clear
+      }
+      return { ...f, [field]: value };
+    });
 
   const calcMt = (bags) => Number((Number(bags || 0) * 0.05).toFixed(3));
   const calcMtk = (mt, km) => Number((Number(mt || 0) * Number(km || 0)).toFixed(3));
@@ -383,6 +388,7 @@ export default function DestinationEntryCreate() {
        
        <>
             <DealerSearchRow
+              key={form.destination?.value}
               destinationId={form.destination?.value}
               onAdd={addDealer}
             />
