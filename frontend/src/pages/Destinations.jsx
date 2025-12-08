@@ -37,12 +37,17 @@ export default function Destination() {
   };
 
   const handleSave = async () => {
+      if (form.is_garage) {
+        if (!form.name) return alert("Destination name required");
+        if (!form.distance) return alert("Distance required");
+      }
     try {
       if (editId) {
         await axiosInstance.put(`/destinations/${editId}/`, form);
       } else {
         await axiosInstance.post(`/destinations/`, form);
       }
+      
 
       setForm({ name: "", is_garage: false });
       setEditId(null);
@@ -72,6 +77,10 @@ export default function Destination() {
         place: destination.place,
         description: destination.description,
         is_garage: destination.is_garage,
+        distance: destination.garage_details?.distance || "",
+        mobile: destination.garage_details?.mobile || "",
+        pincode: destination.garage_details?.pincode || "",
+        address: destination.garage_details?.address || "",
     });
     setEditId(destination.id);
     setShowModal(true);
@@ -254,6 +263,44 @@ export default function Destination() {
               />
               Mark as Garage
             </label>
+            {form.is_garage && (
+              <div className="grid grid-cols-2 gap-3 mt-4 p-3 bg-gray-50 rounded">
+
+                <input
+                  type="number"
+                  required
+                  placeholder="Distance (KM)"
+                  value={form.distance}
+                  onChange={e => setForm({ ...form, distance: e.target.value })}
+                  className="border p-2 rounded"
+                />
+
+                <input
+                  type="text"
+                  placeholder="Mobile (Optional)"
+                  value={form.mobile}
+                  onChange={e => setForm({ ...form, mobile: e.target.value })}
+                  className="border p-2 rounded"
+                />
+
+                <input
+                  type="text"
+                  placeholder="Pincode (Optional)"
+                  value={form.pincode}
+                  onChange={e => setForm({ ...form, pincode: e.target.value })}
+                  className="border p-2 rounded"
+                />
+
+                <textarea
+                  placeholder="Address (Optional)"
+                  value={form.address}
+                  onChange={e => setForm({ ...form, address: e.target.value })}
+                  className="border p-2 rounded col-span-2"
+                ></textarea>
+
+              </div>
+            )}
+
 
             <div className="flex justify-end gap-2">
               <button

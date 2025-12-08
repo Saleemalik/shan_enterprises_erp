@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Dealer, Place, Destination, RateRange, DealerEntry, RangeEntry, DestinationEntry
+from .utils import generate_dealer_code
 
 
 class PlaceSerializer(serializers.ModelSerializer):
@@ -34,10 +35,147 @@ class RateRangeSerializer(serializers.ModelSerializer):
         
 
 class DestinationSerializer(serializers.ModelSerializer):
+    distance = serializers.FloatField(required=False)
+    mobile = serializers.CharField(required=False, allow_blank=True)
+    pincode = serializers.CharField(required=False, allow_blank=True)
+    address = serializers.CharField(required=False, allow_blank=True)
+    garage_details = serializers.SerializerMethodField()
     class Meta:
         model = Destination
-        fields = "__all__"   # send all columns to frontend
+        fields = [
+            'id', 'name', 'place', 'description', 'is_garage',
+            'distance','mobile','pincode','address',
+
+            # return values for edit mode
+            'garage_details',
+        ]
         
+    ## GET DISTANCE FROM PLACE TABLE
+    def get_garage_details(self, obj):
+        if not obj.is_garage:
+            return None
+
+        place = Place.objects.filter(name=obj.name, destination=obj).first()
+        dealer = Dealer.objects.filter(name=obj.name).first()
+
+        return {
+            "distance": place.distance if place else None,
+            "mobile": dealer.mobile if dealer else None,
+            "pincode": dealer.pincode if dealer else None,
+            "address": dealer.address if dealer else None,
+        }
+
+    def validate(self, data):
+        if data.get("is_garage"):
+            if not data.get("distance"):
+                raise serializers.ValidationError({"distance": "Distance required for garage"})
+        return data
+
+    def create(self, validated_data):
+        name = validated_data.get("name")
+        is_garage = validated_data.get("is_garage")
+        distance = validated_data.pop("distance", None)
+        mobile = validated_data.pop("mobile", None)
+        pincode = validated_data.pop("pincode", None)
+        address = validated_data.pop("address", None)
+
+        destination = super().create(validated_data)
+
+        if is_garage:
+            place, created = Place.objects.get_or_create(
+                name=name,
+                destination=destination,
+                defaults={"distance": distance}
+            )
+            if not created:
+                place.distance = distance
+                place.save()
+
+            dealer_code = generate_dealer_code()
+
+            dealer = Dealer.objects.create(
+                code=dealer_code,
+                name=destination.name,
+                mobile=mobile,
+                pincode=pincode,
+                address=address
+            )
+            dealer.places.add(place)
+
+        return destination
+
+    def update(self, instance, validated_data):
+        old_name = instance.name
+        new_name = validated_data.get("name", instance.name)
+        is_garage = validated_data.get("is_garage", instance.is_garage)
+
+        distance = validated_data.pop("distance", None)
+        mobile = validated_data.pop("mobile", None)
+        pincode = validated_data.pop("pincode", None)
+        address = validated_data.pop("address", None)
+
+        destination = super().update(instance, validated_data)
+
+        if not is_garage:
+            dealer = Dealer.objects.filter(name=old_name).first()
+            if dealer:
+                dealer.delete()
+            place = Place.objects.filter(name=old_name, destination=destination).first()
+            if place:
+                place.delete()
+            return destination
+
+        # -------------------------------------------
+        # PLACE
+        # -------------------------------------------
+        if old_name != new_name:
+            place = Place.objects.filter(name=old_name, destination=destination).first()
+            if place:
+                place.name = new_name
+                place.distance = distance if distance is not None else place.distance
+                place.save()
+            else:
+                place = Place.objects.create(
+                    name=new_name,
+                    destination=destination,
+                    distance=distance or 0
+                )
+        else:
+            place, created = Place.objects.get_or_create(
+                name=new_name,
+                destination=destination,
+                defaults={"distance": distance or 0}
+            )
+            if not created and distance is not None:
+                place.distance = distance
+                place.save()
+
+        # -------------------------------------------
+        # DEALER
+        # -------------------------------------------
+        # Find dealer by old name IF renamed else by new name
+        dealer_name_lookup = old_name if old_name != new_name else new_name
+        dealer = Dealer.objects.filter(name=dealer_name_lookup).first()
+
+        if dealer:
+            dealer.name = new_name
+            dealer.mobile = mobile
+            dealer.pincode = pincode
+            dealer.address = address
+            dealer.save()
+        else:
+            dealer = Dealer.objects.create(
+                code=generate_dealer_code(),
+                name=new_name,
+                mobile=mobile,
+                pincode=pincode,
+                address=address
+            )
+
+        dealer.places.add(place)
+
+        return destination
+
 class DealerEntrySerializer(serializers.ModelSerializer):
     class Meta:
         model = DealerEntry
