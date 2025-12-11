@@ -34,93 +34,97 @@ def safe_float(val):
     except:
         return 0
 class BreakableRangeBlock(Flowable):
-    def __init__(self, title, title_cont, table, style):
+
+    def __init__(self, title, title_cont, table, style, is_continuation=False):
         super().__init__()
         self.title = title
         self.title_cont = title_cont
         self.table = table
         self.style = style
-        self._first = True
+        self.is_continuation = is_continuation
+
         self.width = 0
         self.height = 0
-        self.top_padding = 2      # ↓ Reduced (was 8–12)
-        self.bottom_padding = 4   # ↓ Reduced (was 12–20)
-
+        self.top_padding = 2
+        self.bottom_padding = 4
 
     def wrap(self, availWidth, availHeight):
         self.width = availWidth
 
-        # title sizes
+        # Normal title
         p = Paragraph(self.title, self.style)
         _, self.title_h = p.wrap(availWidth, availHeight)
 
+        # Continuation title
         pc = Paragraph(self.title_cont, self.style)
         _, self.cont_h = pc.wrap(availWidth, availHeight)
 
-        # table measured height
-        table_w, table_h = self.table.wrap(availWidth, availHeight)
-
-        # Store for draw
+        # Measure table height for THIS block only
+        _, table_h = self.table.wrap(availWidth, availHeight)
         self.table_h = table_h
 
-        # Final block height: title + small space + table
-        top_title_height = self.title_h if self._first else self.cont_h
+        # Use cont height only if split
+        title_h = self.cont_h if self.is_continuation else self.title_h
 
-        self.height = top_title_height + self.table_h + self.top_padding + self.bottom_padding
+        # Full block height
+        self.height = title_h + self.top_padding + self.table_h + self.bottom_padding
+
         return (availWidth, self.height)
 
-
-
     def split(self, availWidth, availHeight):
-        title_height = self.title_h if self._first else self.cont_h
-        full_needed = title_height + self.table_h + 6
 
-        # CASE 1: First time placing this block AND table does not fit
-        # → Move to next page (NO SPLIT ALLOWED)
-        if self._first and full_needed > availHeight:
-            # We tell ReportLab: don't split this now → move to next page
-            # BUT BE CAREFUL — only do this once
-            self._first = False  # Mark that next time it is a continuation
+        # compute title height
+        title_h = self.cont_h if self.is_continuation else self.title_h
+
+        space_after_title = availHeight - title_h - self.top_padding - self.bottom_padding
+
+        if space_after_title <= 0:
+            # not enough room → move whole block to next page
             return []
 
-        # CASE 2: Now table is being placed on NEXT PAGE but still too large
-        # → Splitting is allowed here
-        available_for_table = availHeight - title_height - 6
-        if available_for_table <= 0:
-            return []
-
-        # Perform normal split
-        parts = self.table.split(availWidth, available_for_table)
+        # Ask table to split
+        parts = self.table.split(availWidth, space_after_title)
 
         if not parts or len(parts) == 1:
+            # Nothing to split
             return []
 
-        # Create continuation blocks
-        first_block = BreakableRangeBlock(self.title, self.title_cont, parts[0], self.style)
-        first_block._first = False
+        # FIRST part → (continuation only if parent was continuation)
+        first = BreakableRangeBlock(
+            self.title,
+            self.title_cont,
+            parts[0],
+            self.style,
+            is_continuation=self.is_continuation
+        )
 
-        second_block = BreakableRangeBlock(self.title, self.title_cont, parts[1], self.style)
-        second_block._first = False
+        # SECOND part → always continuation
+        second = BreakableRangeBlock(
+            self.title,
+            self.title_cont,
+            parts[1],
+            self.style,
+            is_continuation=True
+        )
 
-        return [first_block, second_block]
+        return [first, second]
 
     def draw(self):
+        # Select proper heading
+        if self.is_continuation:
+            p = Paragraph(self.title_cont, self.style)
+            title_h = self.cont_h
+        else:
+            p = Paragraph(self.title, self.style)
+            title_h = self.title_h
 
-        # Choose heading
-        p = Paragraph(self.title if self._first else self.title_cont, self.style)
+        w, h = p.wrap(self.width, title_h)
 
-        # Wrap title
-        w, h = p.wrap(self.width, self.title_h)
+        # Draw at top
+        p.drawOn(self.canv, (self.width - w) / 2, self.table_h + self.bottom_padding)
 
-        # Draw title at VERY TOP CENTER
-        p.drawOn(self.canv, (self.width - w)/2, self.table_h + self.bottom_padding)
-        
-        # Draw table directly under title
+        # Draw table
         self.table.drawOn(self.canv, 0, 0)
-
-        self._first = False
-
-
 class PlaceViewSet(AppBaseViewSet):
     queryset = Place.objects.all().order_by("name")
     serializer_class = PlaceSerializer
