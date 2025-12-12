@@ -1,5 +1,5 @@
 // src/App.jsx
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { HashRouter as Router, Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -17,7 +17,9 @@ export default function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Login />} />
-         <Route
+      
+
+        <Route
           path="/app"
           element={
             <ProtectedRoute>
@@ -30,11 +32,12 @@ export default function App() {
           <Route path="places" element={<Places />} />
           <Route path="rate-ranges" element={<RateRanges />} />
           <Route path="dealers" element={<Dealers />} />
-          <Route path="destination-entries" >
+          
+          <Route path="destination-entries">
             <Route index element={<DestinationEntries />} />
             <Route path="create" element={<DestinationEntryCreate />} />
             <Route path=":id" element={<DestinationEntryEdit />} />
-          </Route> 
+          </Route>
         </Route>
       </Routes>
     </Router>

@@ -1,5 +1,5 @@
 // src/pages/Login.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { login } from "../api/auth";
 import { useNavigate } from "react-router-dom";
 
@@ -8,10 +8,12 @@ import { useNavigate } from "react-router-dom";
 export default function Login() {
   const navigate = useNavigate();
   
-  if (localStorage.getItem("access")) {
-      
-      window.location.href = "/app/dashboard";
-  }
+  useEffect(() => {
+    if (localStorage.getItem("access")) {
+      navigate("/app/dashboard", { replace: true });
+    }
+  }, []);
+  
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -23,7 +25,7 @@ export default function Login() {
     const result = await login(username, password);
 
     if (result.success) {
-      navigate("/app/dashboard");
+      navigate("/app/dashboard", { replace: true });
     } else {
       setError(result.message);
     }
