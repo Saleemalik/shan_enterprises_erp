@@ -1,9 +1,8 @@
 // src/api/auth.js
 import axios from "axios";
+import { API_BASE } from "./axiosConfig";
 
-const API_LOGIN = "http://localhost:8000/api/login/";
-const API_REFRESH = "http://localhost:8000/api/refresh/";
-
+const API_LOGIN = `${API_BASE}/login/`;
 
 export const login = async (username, password) => {
   try {
