@@ -217,7 +217,7 @@ class DestinatonSerializerReadOnly(serializers.ModelSerializer):
 
 class DestinationEntrySerializer(serializers.ModelSerializer):
     rate_ranges = serializers.SerializerMethodField()
-    main_bill = serializers.SerializerMethodField()
+    service_bill = serializers.SerializerMethodField()
     destination = DestinatonSerializerReadOnly(read_only=True)
 
     class Meta:
@@ -230,7 +230,7 @@ class DestinationEntrySerializer(serializers.ModelSerializer):
             "to_address",
             "bill_number",
             "rate_ranges",
-            "main_bill",
+            "service_bill",
         ]
 
     def get_rate_ranges(self, obj):
@@ -243,9 +243,9 @@ class DestinationEntrySerializer(serializers.ModelSerializer):
                 labels.append(f"{from_km}-{to_km}")
         return labels
 
-    def get_main_bill(self, obj):
-        if obj.main_bill:
-            return {"bill_number": obj.main_bill.bill_number}
+    def get_service_bill(self, obj):
+        if obj.service_bill:
+            return {"bill_date": obj.service_bill.bill_date, "id": obj.service_bill.id}
         return None
 
 class DestinationEntryWriteSerializer(serializers.ModelSerializer):
@@ -354,6 +354,6 @@ class DestinationEntryDetailSerializer(serializers.ModelSerializer):
             "letter_note",
             "to_address",
             "bill_number",
-            "main_bill",
+            "service_bill",
             "range_entries",
         ]
