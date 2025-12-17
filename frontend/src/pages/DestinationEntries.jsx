@@ -126,9 +126,9 @@ export default function DestinationEntries() {
 
               {/* Billed (show bill number or Not billed) */}
               <td className="p-2">
-                {entry.main_bill && entry.main_bill.bill_number ? (
+                {entry.service_bill && entry.service_bill.bill_date ? (
                   <span className="bg-green-100 text-green-700 px-2 py-1 rounded">
-                    Bill #{entry.main_bill.bill_number}
+                    Bill @{entry.service_bill.bill_date}
                   </span>
                 ) : (
                   <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded">
