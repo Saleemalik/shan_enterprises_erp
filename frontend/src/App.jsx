@@ -11,6 +11,8 @@ import RateRanges from "./pages/RateRanges";
 import DestinationEntries from "./pages/DestinationEntries";
 import DestinationEntryCreate from "./pages/DestinationEntryCreate";
 import DestinationEntryEdit from "./pages/DestinationEntryEdit";
+import ServiceBillList from "./pages/service-bills/ServiceBills";
+import ServiceBillCreate from "./pages/service-bills/ServiceBillCreate";
 
 export default function App() {
   return (
@@ -37,6 +39,10 @@ export default function App() {
             <Route index element={<DestinationEntries />} />
             <Route path="create" element={<DestinationEntryCreate />} />
             <Route path=":id" element={<DestinationEntryEdit />} />
+          </Route>
+          <Route path="service-bills/*">
+            <Route index element={<ServiceBillList />} />
+            <Route path="create" element={<ServiceBillCreate />} />
           </Route>
         </Route>
       </Routes>

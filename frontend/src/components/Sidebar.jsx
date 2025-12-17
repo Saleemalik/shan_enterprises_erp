@@ -8,6 +8,7 @@ export default function Sidebar() {
     { label: "RateRanges", path: "/app/rate-ranges" },
     { label: "Dealers", path: "/app/dealers" },
     { label: "Destination Entries", path: "/app/destination-entries" },
+    { label: "Service Bills", path: "/app/service-bills" },
   ];
 
   return (
