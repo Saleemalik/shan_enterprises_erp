@@ -1,6 +1,7 @@
 import os
 from .models import Dealer, Place, Destination, RateRange, DestinationEntry, RangeEntry, DealerEntry
-from .serializers import DealerSerializer, PlaceSerializer, DestinationSerializer, RateRangeSerializer, DestinationEntrySerializer, DestinationEntryWriteSerializer, DestinationEntryDetailSerializer
+from .serializers import DealerSerializer, PlaceSerializer, DestinationSerializer, RateRangeSerializer, DestinationEntrySerializer, DestinationEntryWriteSerializer, DestinationEntryDetailSerializer, TransportDepotDealerEntrySerializer
+from django.db.models import Q
 from .base import AppBaseViewSet, BaseViewSet
 import pandas as pd
 from rest_framework.decorators import action
@@ -595,3 +596,37 @@ class DestinationEntryViewSet(BaseViewSet):
 
         buffer.seek(0)
         return buffer
+
+    
+    @action(detail=False, methods=["get"], url_path="transport-depot-unbilled")
+    def transport_depot_unbilled(self, request):
+        """
+        Dealer entries:
+        - DestinationEntry is TRANSPORT_DEPOT
+        OR destination is garage
+        - service_bill IS NULL
+        OR equals provided service_bill_id (edit mode)
+        """
+
+        service_bill_id = request.query_params.get("service_bill_id")
+
+        qs = (
+            DealerEntry.objects
+            .filter(
+                Q(range_entry__destination_entry__transport_type="TRANSPORT_DEPOT") |
+                Q(range_entry__destination_entry__destination__is_garage=True)
+            )
+            .filter(
+                Q(range_entry__destination_entry__service_bill__isnull=True) |
+                Q(range_entry__destination_entry__service_bill_id=service_bill_id)
+            )
+            .select_related(
+                "dealer",
+                "range_entry",
+                "range_entry__destination_entry",
+                "range_entry__destination_entry__destination",
+            )
+        )
+
+        serializer = TransportDepotDealerEntrySerializer(qs, many=True)
+        return Response({"results": serializer.data})

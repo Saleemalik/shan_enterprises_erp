@@ -357,3 +357,47 @@ class DestinationEntryDetailSerializer(serializers.ModelSerializer):
             "service_bill",
             "range_entries",
         ]
+
+class TransportDepotDealerEntrySerializer(serializers.ModelSerializer):
+    destination = serializers.CharField(
+        source="range_entry.destination_entry.destination.name",
+        read_only=True
+    )
+    destination_entry_id = serializers.IntegerField(
+        source="range_entry.destination_entry.id",
+        read_only=True
+    )
+
+    qty_mt = serializers.FloatField(
+        source="mt",
+        read_only=True
+    )
+
+    km = serializers.FloatField(read_only=True)
+
+    mt_km = serializers.FloatField(
+        source="mtk",
+        read_only=True
+    )
+
+    rate = serializers.FloatField(read_only=True)
+    amount = serializers.FloatField(read_only=True)
+
+    number = serializers.CharField(
+        source="mda_number",
+        read_only=True
+    )
+
+    class Meta:
+        model = DealerEntry
+        fields = [
+            "id",
+            "destination_entry_id",  # Destination
+            "destination",   # Destination
+            "qty_mt",        # Qty / MT
+            "km",            # KM
+            "mt_km",         # MT × KM
+            "rate",          # Rate
+            "amount",        # Amount
+            "number",        # No.
+        ]
