@@ -51,7 +51,9 @@ export default function TransportDepotSection({ data = {}, onChange }) {
     onChange("entries", selectedRows);
     onChange("total_depot_qty", totalQty.toFixed(3));
     onChange("total_depot_amount", totalAmount.toFixed(2));
-  }, [selectedRows, onChange]);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRows]);
 
   /* ----------------------------------
    * Toggle row by UNIQUE dealer entry id
