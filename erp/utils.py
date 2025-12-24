@@ -13,3 +13,9 @@ def generate_dealer_code():
     last_number = int(last_code.replace(prefix, ""))
     new_number = last_number + 1
     return f"{prefix}{new_number:03d}"
+
+
+def fmt_km(val):
+    if val is None:
+        return ""
+    return str(int(val)) if val.is_integer() else str(val)

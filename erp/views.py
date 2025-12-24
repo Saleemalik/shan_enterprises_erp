@@ -22,6 +22,9 @@ from io import BytesIO
 from num2words import num2words
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from reportlab.platypus import Flowable, Paragraph, KeepTogether
+from collections import defaultdict
+from .utils import fmt_km
+
 
 
 def safe_float(val):
@@ -397,22 +400,6 @@ class DestinationEntryViewSet(BaseViewSet):
         if self.action in ["create", "update", "partial_update"]:
             return DestinationEntryWriteSerializer
         return DestinationEntrySerializer
-    
-    @action(detail=False, methods=["get"], url_path="transport-fol-unbilled")
-    def transport_fol_unbilled(self, request):
-        
-        service_bill_id = request.query_params.get("service_bill_id")
-        qs = self.queryset.filter(
-                Q(transport_type="TRANSPORT_FOL") |
-                Q(destination__is_garage=False) | 
-                Q(destination__is_garage__isnull=True)
-            ).filter(
-                Q(service_bill__isnull=True) |
-                Q(service_bill_id=service_bill_id)
-            )
-
-        serializer = self.get_serializer(qs, many=True)
-        return Response(serializer.data)
 
     # Custom action to create nested entry
     @action(detail=False, methods=["post"], url_path="create-full")
@@ -646,3 +633,124 @@ class DestinationEntryViewSet(BaseViewSet):
 
         serializer = TransportDepotDealerEntrySerializer(qs, many=True)
         return Response({"results": serializer.data})
+    
+    @action(detail=False, methods=["get"], url_path="transport-fol-unbilled")
+    def transport_fol_unbilled(self, request):
+        
+        service_bill_id = request.query_params.get("service_bill_id")
+        qs = self.queryset.filter(
+                Q(transport_type="TRANSPORT_FOL") |
+                Q(destination__is_garage=False) | 
+                Q(destination__is_garage__isnull=True)
+            ).filter(
+                Q(service_bill__isnull=True) |
+                Q(service_bill_id=service_bill_id)
+            )
+
+        serializer = self.get_serializer(qs, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=["post"], url_path="transport-fol-preview")
+    def transport_fol_preview(self, request):
+        """
+        Build Transport FOL preview table
+        GROUPING:
+            Range Slab
+              └── Destination
+        """
+
+        destination_entry_ids = request.data.get("destination_entry_ids", [])
+        rh_qty = float(request.data.get("rh_qty", 0) or 0)
+
+        if not destination_entry_ids:
+            return Response(
+                {"detail": "destination_entry_ids is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # ------------------------------------------------------------
+        # Fetch only TRANSPORT_FOL slab range entries
+        # ------------------------------------------------------------
+        range_entries = (
+            RangeEntry.objects
+            .select_related(
+                "destination_entry__destination",
+                "rate_range"
+            )
+            .filter(
+                Q(destination_entry_id__in=destination_entry_ids) &
+                Q(Q(destination_entry__transport_type="TRANSPORT_FOL") |
+                Q(destination_entry__destination__is_garage=False) ) &
+                Q(rate_range__isnull=False)
+            )
+        )
+
+        if not range_entries.exists():
+            return Response(
+                {"detail": "No Transport FOL slab entries found"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # ------------------------------------------------------------
+        # Group: Slab → Destination
+        # ------------------------------------------------------------
+        grouped = defaultdict(lambda: defaultdict(list))
+
+        for entry in range_entries:
+            slab = entry.rate_range
+            destination = entry.destination_entry.destination
+            grouped[slab][destination].append(entry)
+
+        rows = []
+        grand_total_qty = 0
+        grand_total_amount = 0
+
+        # ------------------------------------------------------------
+        # Build slab-wise response
+        # ------------------------------------------------------------
+        for slab, destinations in grouped.items():
+            slab_qty = 0
+            slab_mtk = 0
+            slab_amount = 0
+
+            destination_rows = []
+
+            for destination, entries in destinations.items():
+                dest_qty = sum(e.total_mt or 0 for e in entries)
+                dest_mtk = sum(e.total_mtk or 0 for e in entries)
+                dest_amount = sum(e.total_amount or 0 for e in entries)
+
+                slab_qty += dest_qty
+                slab_mtk += dest_mtk
+                slab_amount += dest_amount
+
+                destination_rows.append({
+                    "destination_place": destination.place,
+                    "qty_mt": round(dest_qty, 2),
+                    "qty_mtk": round(dest_mtk, 2),
+                    "amount": round(dest_amount, 2),
+                })
+
+            rows.append({
+                "range_slab": f"{fmt_km(slab.from_km)} - {fmt_km(slab.to_km)}",
+                "rate": slab.rate,
+                "destinations": destination_rows,
+                "range_total_qty": round(slab_qty, 2),
+                "range_total_mtk": round(slab_mtk, 2),
+                "range_total_amount": round(slab_amount, 2),
+            })
+
+            grand_total_qty += slab_qty
+            grand_total_amount += slab_amount
+
+        # ------------------------------------------------------------
+        # Final response
+        # ------------------------------------------------------------
+        response = {
+            "rows": rows,
+            "rh_qty": round(rh_qty, 2),
+            "grand_total_qty": round(grand_total_qty + rh_qty, 2),
+            "grand_total_amount": round(grand_total_amount, 2),
+        }
+
+        return Response(response, status=status.HTTP_200_OK)

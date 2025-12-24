@@ -235,24 +235,30 @@ class TransportDepotSection(models.Model):
             raise ValidationError(
                 "Transport Depot section requires at least one TRANSPORT_DEPOT destination entry."
             )
-    
+
 class TransportFOLSection(models.Model):
-    bill_number = models.CharField(max_length=255, unique=True)
     bill = models.OneToOneField(
         ServiceBill,
         related_name="transport_fol",
         on_delete=models.CASCADE
     )
-    
-    rh_qty = models.FloatField(null=True, blank=True)
-    total_fol_qty = models.FloatField(null=True, blank=True)
-    total_fol_amount = models.FloatField(null=True, blank=True)
-    
+
+    bill_number = models.CharField(max_length=255, unique=True)
+
+    # === API MATCHING FIELDS ===
+    rh_qty = models.FloatField(default=0)
+
+    grand_total_qty = models.FloatField(default=0)
+    grand_total_amount = models.FloatField(default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
     def save(self, *args, **kwargs):
         self.full_clean()
-        super().save(*args, **kwargs)
-    
+        super().save(*args, **kwargs)    
     def clean(self):
+        # must have at least one FOL destination
         fol_entries = self.bill.destination_entries.filter(
             transport_type="TRANSPORT_FOL"
         )
@@ -260,7 +266,10 @@ class TransportFOLSection(models.Model):
         if not fol_entries.exists():
             raise ValidationError(
                 "Transport FOL section requires at least one TRANSPORT_FOL destination entry."
-            )
+            )   
+        
+    def __str__(self):
+        return f"Transport FOL Section for Bill #{self.bill.id}"   
 
 class TransportFOLSlab(models.Model):
     fol_section = models.ForeignKey(
@@ -269,31 +278,31 @@ class TransportFOLSlab(models.Model):
         on_delete=models.CASCADE
     )
 
-    slab_range = models.ForeignKey(
-        RateRange,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True
-    )
+    # === API MATCHING FIELDS ===
+    range_slab = models.CharField(max_length=50, blank=True)     # "50 - 75"
+    rate = models.FloatField(blank=True, null=True)
+
+    range_total_qty = models.FloatField(blank=True, null=True)
+    range_total_mtk = models.FloatField(blank=True, null=True)
+    range_total_amount = models.FloatField(blank=True, null=True)
     
-    total_qty = models.FloatField()
-    total_mtk = models.FloatField(null=True, blank=True)
-    total_amount = models.FloatField()
-
-
-    def save(self, *args, **kwargs):
-        self.full_clean()
-        super().save(*args, **kwargs)
-
-    def clean(self):
-        # All range entries under this slab must belong to same ServiceBill
-        bill = self.fol_section.bill
-
-        invalid_ranges = self.range_entries.exclude(
-            destination_entry__service_bill=bill
-        )
-
-        if invalid_ranges.exists():
-            raise ValidationError(
-                "FOL slab can only contain range entries from the same Service Bill."
-            )
+    class Meta:
+        unique_together = ("fol_section", "range_slab")
+    
+    def __str__(self):
+        return f"Slab: {self.range_slab} | Rate: {self.rate}"
+    
+class TransportFOLDestination(models.Model):
+    fol_slab = models.ForeignKey(
+        TransportFOLSlab,
+        related_name="destinations",
+        on_delete=models.CASCADE
+    )
+    destination_place = models.CharField(max_length=50, blank=True, null=True)  # "Destination Name (Place Name)"
+    qty_mt = models.FloatField()
+    qty_mtk = models.FloatField()
+    amount = models.FloatField()
+    
+    def __str__(self):
+        return f"{self.destination_place} | MT: {self.qty_mt}"
+    
