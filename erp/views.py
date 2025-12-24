@@ -397,6 +397,22 @@ class DestinationEntryViewSet(BaseViewSet):
         if self.action in ["create", "update", "partial_update"]:
             return DestinationEntryWriteSerializer
         return DestinationEntrySerializer
+    
+    @action(detail=False, methods=["get"], url_path="transport-fol-unbilled")
+    def transport_fol_unbilled(self, request):
+        
+        service_bill_id = request.query_params.get("service_bill_id")
+        qs = self.queryset.filter(
+                Q(transport_type="TRANSPORT_FOL") |
+                Q(destination__is_garage=False) | 
+                Q(destination__is_garage__isnull=True)
+            ).filter(
+                Q(service_bill__isnull=True) |
+                Q(service_bill_id=service_bill_id)
+            )
+
+        serializer = self.get_serializer(qs, many=True)
+        return Response(serializer.data)
 
     # Custom action to create nested entry
     @action(detail=False, methods=["post"], url_path="create-full")
