@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../api/axiosConfig";
 import HandlingSection from "../../components/ServiceBill/HandlingSection";
 import TransportDepotSection from "../../components/ServiceBill/TransportDepotSection";
+import TransportFOLSection from "../../components/ServiceBill/TransportFOLSection";
 
 export default function ServiceBillCreate() {
   const navigate = useNavigate();
@@ -255,21 +256,14 @@ export default function ServiceBillCreate() {
 
       {/* FOL */}
       {activeTab === "FOL" && (
-        <div className="grid grid-cols-3 gap-4 text-sm">
-          <input className={input} placeholder="FOL Bill Number"
-            value={form.fol.bill_number}
-            onChange={(e) => updateField("fol", "bill_number", e.target.value)} />
-          <input className={input} placeholder="RH Qty"
-            value={form.fol.rh_qty}
-            onChange={(e) => updateField("fol", "rh_qty", e.target.value)} />
-          <input className={input} placeholder="Total FOL Qty"
-            value={form.fol.total_fol_qty}
-            onChange={(e) => updateField("fol", "total_fol_qty", e.target.value)} />
-          <input className={input} placeholder="Total FOL Amount"
-            value={form.fol.total_fol_amount}
-            onChange={(e) => updateField("fol", "total_fol_amount", e.target.value)} />
-        </div>
+        <TransportFOLSection
+          data={form.fol}
+          onChange={(field, value) =>
+            updateField("fol", field, value)
+          }
+        />
       )}
+
 
       <div className="flex justify-end mt-6">
         <button
