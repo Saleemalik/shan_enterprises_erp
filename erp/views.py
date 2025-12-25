@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from django.db import transaction
 from rest_framework import status
 from rest_framework.exceptions import APIException
+from rest_framework.views import APIView
 
 from django.db.models import Prefetch
 from django.http import FileResponse
@@ -701,7 +702,7 @@ class DestinationEntryViewSet(BaseViewSet):
             destination = entry.destination_entry.destination
             grouped[slab][destination].append(entry)
 
-        rows = []
+        slabs = []
         grand_total_qty = 0
         grand_total_amount = 0
 
@@ -731,7 +732,7 @@ class DestinationEntryViewSet(BaseViewSet):
                     "amount": round(dest_amount, 2),
                 })
 
-            rows.append({
+            slabs.append({
                 "range_slab": f"{fmt_km(slab.from_km)} - {fmt_km(slab.to_km)}",
                 "rate": slab.rate,
                 "destinations": destination_rows,
@@ -747,7 +748,7 @@ class DestinationEntryViewSet(BaseViewSet):
         # Final response
         # ------------------------------------------------------------
         response = {
-            "rows": rows,
+            "slabs": slabs,
             "rh_qty": round(rh_qty, 2),
             "grand_total_qty": round(grand_total_qty + rh_qty, 2),
             "grand_total_amount": round(grand_total_amount, 2),

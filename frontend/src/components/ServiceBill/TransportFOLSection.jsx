@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import axiosInstance from "../../api/axiosConfig";
 
 export default function TransportFOLSection({ data = {}, onChange }) {
-  const [rows, setRows] = useState([]);
+  const [slabs, setSlabs] = useState([]);
   const [selectedIds, setSelectedIds] = useState(
     data.destination_entry_ids || []
   );
@@ -16,10 +16,10 @@ export default function TransportFOLSection({ data = {}, onChange }) {
   const serviceBillId = data?.id;
 
   const allSelected =
-    rows.length > 0 && selectedIds.length === rows.length;
+    slabs.length > 0 && selectedIds.length === slabs.length;
 
   const someSelected =
-    selectedIds.length > 0 && selectedIds.length < rows.length;
+    selectedIds.length > 0 && selectedIds.length < slabs.length;
 
   /* ───────── Fetch unbilled + current service bill entries ───────── */
   useEffect(() => {
@@ -29,7 +29,7 @@ export default function TransportFOLSection({ data = {}, onChange }) {
           service_bill_id: serviceBillId || undefined,
         },
       })
-      .then((res) => setRows(res.data))
+      .then((res) => setSlabs(res.data))
       .catch((err) => console.error(err));
   }, [serviceBillId]);
 
@@ -55,7 +55,7 @@ export default function TransportFOLSection({ data = {}, onChange }) {
     if (allSelected) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(rows.map((e) => e.id));
+      setSelectedIds(slabs.map((e) => e.id));
     }
   };
 
@@ -176,7 +176,7 @@ export default function TransportFOLSection({ data = {}, onChange }) {
               </thead>
 
               <tbody>
-                {rows.map((r) => (
+                {slabs.map((r) => (
                   <tr
                     key={r.id}
                     className="hover:bg-gray-50"
@@ -201,7 +201,7 @@ export default function TransportFOLSection({ data = {}, onChange }) {
                   </tr>
                 ))}
 
-                {rows.length === 0 && (
+                {slabs.length === 0 && (
                   <tr>
                     <td
                       colSpan={5}
@@ -233,7 +233,7 @@ export default function TransportFOLSection({ data = {}, onChange }) {
       {/* ───────── PREVIEW TAB ───────── */}
       {activeTab === "preview" && previewData && (
         <div className="space-y-6">
-          {previewData.rows.map((row, idx) => (
+          {previewData.slabs.map((row, idx) => (
             <div
               key={idx}
               className="border rounded p-3"
