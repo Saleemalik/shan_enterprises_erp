@@ -31,8 +31,16 @@ export default function TransportDepotSection({ data = {}, onChange }) {
    * Selected rows (derived)
    * ---------------------------------- */
   const selectedRows = useMemo(() => {
+    
     return entries.filter((e) => selectedIds.includes(e.id));
   }, [entries, selectedIds]);
+
+  useEffect(() => {
+    if (Array.isArray(data.entries)) {
+      setSelectedIds(data.entries);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.id]);
 
   /* ----------------------------------
    * Auto totals
