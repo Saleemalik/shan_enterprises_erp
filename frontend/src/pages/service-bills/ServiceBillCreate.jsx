@@ -43,6 +43,7 @@ export default function ServiceBillCreate() {
         bill_number: "",
         total_depot_qty: "",
         total_depot_amount: "",
+        entries: [],
       },
 
       fol: {
@@ -50,6 +51,7 @@ export default function ServiceBillCreate() {
         rh_qty: "",
         total_fol_qty: "",
         total_fol_amount: "",
+        slabs: [],
       },
     };
 

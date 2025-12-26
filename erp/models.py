@@ -148,6 +148,7 @@ class DealerEntry(models.Model):
     date = models.CharField(max_length=255)
     description = models.CharField(max_length=255, default="FACTOM FOS")
     remarks = models.TextField(null=True, blank=True)
+    service_bill = models.ForeignKey("ServiceBill", on_delete=models.SET_NULL, null=True, blank=True, related_name="dealer_entries")
 
     def __str__(self):
         return f"{self.mda_number} - {self.dealer}"
