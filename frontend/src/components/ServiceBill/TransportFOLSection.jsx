@@ -77,12 +77,18 @@ export default function TransportFOLSection({ data = {}, onChange }) {
         }
       );
 
-      setPreviewData(res.data);
+      const preview = res.data;
+
+      setPreviewData(preview);
       setActiveTab("preview");
 
-      // persist values to parent
+      // 🔥 THIS IS THE MISSING PART
+      onChange("slabs", preview.slabs);
+      onChange("rh_qty", preview.rh_qty);
+      onChange("total_fol_qty", preview.grand_total_qty);
+      onChange("total_fol_amount", preview.grand_total_amount);
       onChange("destination_entry_ids", selectedIds);
-      onChange("rh_qty", rhQty);
+
     } catch (err) {
       console.error(err);
       alert("Failed to load preview");

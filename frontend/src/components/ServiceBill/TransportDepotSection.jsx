@@ -48,7 +48,7 @@ export default function TransportDepotSection({ data = {}, onChange }) {
       0
     );
 
-    onChange("entries", selectedRows);
+    onChange("entries", selectedIds);
     onChange("total_depot_qty", totalQty.toFixed(3));
     onChange("total_depot_amount", totalAmount.toFixed(2));
 

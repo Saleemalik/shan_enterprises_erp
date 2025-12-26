@@ -44,6 +44,16 @@ export default function HandlingSection({ data = {}, onChange }) {
 
   return (
     <div className="space-y-6 text-sm">
+       <div className="w-1/3">
+        <label className="block mb-1 font-medium">
+          Handling Bill Number
+        </label>
+        <input
+          className="border p-1.5 rounded w-full"
+          value={data.bill_number || ""}
+          onChange={(e) => onChange("bill_number", e.target.value)}
+        />
+      </div>
 
       {/* Qty Summary */}
       <div className="border rounded p-3">

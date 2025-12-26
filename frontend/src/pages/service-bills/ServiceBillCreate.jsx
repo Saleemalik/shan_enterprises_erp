@@ -55,27 +55,20 @@ export default function ServiceBillCreate() {
       },
     };
 
-
+  
+  const safeParse = (value, fallback) => {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return fallback;
+    }
+  };
   
 
   const [form, setForm] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : EMPTY_FORM;
+    return saved ? safeParse(saved, EMPTY_FORM) : EMPTY_FORM;
   });
-
-
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      setForm((f) => ({
-        ...f,
-        handling: {
-          ...f.handling,
-          ...JSON.parse(saved),
-        },
-      }));
-    }
-  }, []);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(form));
@@ -97,22 +90,50 @@ export default function ServiceBillCreate() {
     try {
       const payload = {
         bill_date: form.bill_date || null,
-        to_address: form.to_address,
-        letter_note: form.letter_note,
-        date_of_clearing: form.date_of_clearing,
+        to_address: form.to_address || "",
+        letter_note: form.letter_note || "",
+        date_of_clearing: form.date_of_clearing || "",
         product: form.product,
-        hsn_code: form.hsn_code,
-        year: form.year,
+        hsn_code: form.hsn_code || "",
+        year: form.year || "",
 
-        handling: form.handling.bill_number ? form.handling : null,
-        transport_depot: form.depot.bill_number ? form.depot : null,
-        transport_fol: form.fol.bill_number ? form.fol : null,
+        handling:
+          form.handling?.bill_number
+            ? {
+                ...form.handling,
+              }
+            : null,
+
+        depot:
+          form.depot?.bill_number
+            ? {
+                bill_number: form.depot.bill_number,
+                total_depot_qty: form.depot.total_depot_qty || 0,
+                total_depot_amount: form.depot.total_depot_amount || 0,
+                entries: form.depot.entries || [],
+              }
+            : null,
+
+        fol:
+          form.fol?.bill_number
+            ? {
+                bill_number: form.fol.bill_number,
+                rh_qty: form.fol.rh_qty || 0,
+                total_fol_qty: form.fol.total_fol_qty || 0,
+                total_fol_amount: form.fol.total_fol_amount || 0,
+                slabs: form.fol.slabs || [],
+              }
+            : null,
       };
 
+      console.log("SERVICE BILL PAYLOAD", payload);
+
       const res = await axiosInstance.post("/service-bills/", payload);
-      navigate(`/app/service-bills/${res.data.id}`);
+
+      // localStorage.removeItem(STORAGE_KEY);
+      // navigate(`/app/service-bills/${res.data.id}`);
     } catch (err) {
-      console.error(err);
+      console.error(err?.response?.data || err);
       alert("Failed to create Service Bill");
     }
   };
