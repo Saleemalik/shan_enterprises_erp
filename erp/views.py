@@ -1,6 +1,6 @@
 import os
-from .models import Dealer, Place, Destination, RateRange, DestinationEntry, RangeEntry, DealerEntry
-from .serializers import DealerSerializer, PlaceSerializer, DestinationSerializer, RateRangeSerializer, DestinationEntrySerializer, DestinationEntryWriteSerializer, DestinationEntryDetailSerializer, TransportDepotDealerEntrySerializer
+from .models import Dealer, Place, Destination, RateRange, DestinationEntry, RangeEntry, DealerEntry, ServiceBill
+from .serializers import DealerSerializer, PlaceSerializer, DestinationSerializer, RateRangeSerializer, DestinationEntrySerializer, DestinationEntryWriteSerializer, DestinationEntryDetailSerializer, TransportDepotDealerEntrySerializer, ServiceBillCreateSerializer
 from django.db.models import Q
 from .base import AppBaseViewSet, BaseViewSet
 import pandas as pd
@@ -621,8 +621,8 @@ class DestinationEntryViewSet(BaseViewSet):
                 Q(range_entry__destination_entry__destination__is_garage=True)
             )
             .filter(
-                Q(range_entry__destination_entry__service_bill__isnull=True) |
-                Q(range_entry__destination_entry__service_bill_id=service_bill_id)
+                Q(service_bill__isnull=True) |
+                Q(service_bill_id=service_bill_id)
             )
             .select_related(
                 "dealer",
@@ -755,3 +755,13 @@ class DestinationEntryViewSet(BaseViewSet):
         }
 
         return Response(response, status=status.HTTP_200_OK)
+    
+    
+
+class ServiceBillViewSet(BaseViewSet):
+    queryset = ServiceBill.objects.all()
+    serializer_class = ServiceBillCreateSerializer
+
+    @transaction.atomic
+    def perform_create(self, serializer):
+        serializer.save()
