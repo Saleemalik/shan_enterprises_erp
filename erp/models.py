@@ -79,7 +79,8 @@ class DestinationEntry(models.Model):
         if self.service_bill:
             # ensure entry is not already linked elsewhere
             qs = DestinationEntry.objects.filter(
-                id=self.id
+                id=self.id,
+                service_bill__isnull=False
             ).exclude(service_bill=self.service_bill)
 
             if qs.exists():
@@ -216,27 +217,12 @@ class TransportDepotSection(models.Model):
     bill = models.OneToOneField(
         ServiceBill,
         related_name="transport_depot",
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
     )
 
     total_depot_qty = models.FloatField(null=True, blank=True)
     total_depot_amount = models.FloatField(null=True, blank=True)
     
-    def save(self, *args, **kwargs):
-        self.full_clean()
-        super().save(*args, **kwargs)
-    
-    def clean(self):
-        # must have at least one depot destination
-        depot_entries = self.bill.destination_entries.filter(
-            transport_type="TRANSPORT_DEPOT"
-        )
-
-        if not depot_entries.exists():
-            raise ValidationError(
-                "Transport Depot section requires at least one TRANSPORT_DEPOT destination entry."
-            )
-
 class TransportFOLSection(models.Model):
     bill = models.OneToOneField(
         ServiceBill,
@@ -255,20 +241,6 @@ class TransportFOLSection(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def save(self, *args, **kwargs):
-        self.full_clean()
-        super().save(*args, **kwargs)    
-    def clean(self):
-        # must have at least one FOL destination
-        fol_entries = self.bill.destination_entries.filter(
-            transport_type="TRANSPORT_FOL"
-        )
-
-        if not fol_entries.exists():
-            raise ValidationError(
-                "Transport FOL section requires at least one TRANSPORT_FOL destination entry."
-            )   
-        
     def __str__(self):
         return f"Transport FOL Section for Bill #{self.bill.id}"   
 
