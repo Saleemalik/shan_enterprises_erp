@@ -85,8 +85,8 @@ export default function TransportFOLSection({ data = {}, onChange }) {
       // 🔥 THIS IS THE MISSING PART
       onChange("slabs", preview.slabs);
       onChange("rh_qty", preview.rh_qty);
-      onChange("total_fol_qty", preview.grand_total_qty);
-      onChange("total_fol_amount", preview.grand_total_amount);
+      onChange("grand_total_qty", preview.grand_total_qty);
+      onChange("grand_total_amount", preview.grand_total_amount);
       onChange("destination_entry_ids", selectedIds);
 
     } catch (err) {

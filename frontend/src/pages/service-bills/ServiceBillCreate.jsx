@@ -49,8 +49,8 @@ export default function ServiceBillCreate() {
       fol: {
         bill_number: "",
         rh_qty: "",
-        total_fol_qty: "",
-        total_fol_amount: "",
+        grand_total_qty: "",
+        grand_total_amount: "",
         slabs: [],
       },
     };
@@ -119,8 +119,8 @@ export default function ServiceBillCreate() {
             ? {
                 bill_number: form.fol.bill_number,
                 rh_qty: form.fol.rh_qty || 0,
-                total_fol_qty: form.fol.total_fol_qty || 0,
-                total_fol_amount: form.fol.total_fol_amount || 0,
+                grand_total_qty: form.fol.grand_total_qty || 0,
+                grand_total_amount: form.fol.grand_total_amount || 0,
                 slabs: form.fol.slabs || [],
               }
             : null,

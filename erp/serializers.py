@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import Dealer, Place, Destination, RateRange, DealerEntry, RangeEntry, DestinationEntry, HandlingBillSection, TransportDepotSection, TransportFOLSection, ServiceBill, TransportFOLDestination, TransportFOLSlab
 from .utils import generate_dealer_code
 from django.db import transaction
+from django.db.models import Q
 
 class PlaceSerializer(serializers.ModelSerializer):
     destination_name = serializers.CharField(source="destination.name", read_only=True)
@@ -404,37 +405,110 @@ class TransportDepotDealerEntrySerializer(serializers.ModelSerializer):
 
 
 class HandlingSectionSerializer(serializers.ModelSerializer):
+    
     class Meta:
         model = HandlingBillSection
         exclude = ("bill",)
+        extra_kwargs = {
+            "bill_number": {"validators": []},
+        }
 
 
 class TransportDepotSectionSerializer(serializers.ModelSerializer):
+    # list of dealer entery ids
+    entries = serializers.ListField(
+        child=serializers.IntegerField(),
+        write_only=True,
+        required=False
+    )
+
     class Meta:
         model = TransportDepotSection
         exclude = ("bill",)
+        extra_kwargs = {
+            "bill_number": {"validators": []},
+        }
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+
+        # READ: compute entries dynamically
+        data["entries"] = list(
+            DealerEntry.objects
+            .filter(
+                Q(service_bill=instance.bill) &
+                (
+                    Q(range_entry__destination_entry__transport_type="TRANSPORT_DEPOT")
+                    | Q(range_entry__destination_entry__destination__is_garage=True)
+                )
+            )
+            .values_list("id", flat=True)
+        )
+
+        return data
 
 
 class TransportFOLSectionSerializer(serializers.ModelSerializer):
+    # WRITE: accept slabs payload
+    slabs = serializers.JSONField(
+        write_only=True,
+        required=False
+    )
+
     class Meta:
         model = TransportFOLSection
         exclude = ("bill",)
-        
+        extra_kwargs = {
+            "bill_number": {"validators": []},
+        }
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+
+        slabs_data = []
+        slabs = (
+            instance.slabs
+            .prefetch_related("destinations")
+            .all()
+            .order_by("range_slab")
+        )
+
+        for slab in slabs:
+            slabs_data.append({
+                "range_slab": slab.range_slab,
+                "rate": slab.rate,
+                "range_total_qty": slab.range_total_qty,
+                "range_total_mtk": slab.range_total_mtk,
+                "range_total_amount": slab.range_total_amount,
+                "destinations": [
+                    {
+                        "destination_place": d.destination_place,
+                        "qty_mt": d.qty_mt,
+                        "qty_mtk": d.qty_mtk,
+                        "amount": d.amount,
+                    }
+                    for d in slab.destinations.all()
+                ]
+            })
+
+        # READ: inject slabs into output
+        data["slabs"] = slabs_data
+        return data
 
 class ServiceBillCreateSerializer(serializers.ModelSerializer):
     handling = HandlingSectionSerializer(required=False, allow_null=True)
-    depot = TransportDepotSectionSerializer(required=False, allow_null=True)
-    fol = TransportFOLSectionSerializer(required=False, allow_null=True)
+    depot = TransportDepotSectionSerializer(required=False, source="transport_depot", allow_null=True)
+    fol = TransportFOLSectionSerializer(required=False, source="transport_fol", allow_null=True)
 
     class Meta:
         model = ServiceBill
         fields = "__all__"
-
+    
     @transaction.atomic
     def create(self, validated_data):
         handling_data = validated_data.pop("handling", None)
-        depot_data = validated_data.pop("depot", None)
-        fol_data = validated_data.pop("fol", None)
+        depot_data = validated_data.pop("transport_depot", None)   # ✅ FIX
+        fol_data = validated_data.pop("transport_fol", None)    
 
         # =========================
         # 1️⃣ Create Service Bill
@@ -442,26 +516,30 @@ class ServiceBillCreateSerializer(serializers.ModelSerializer):
         bill = ServiceBill.objects.create(**validated_data)
 
         # =========================
-        # 2️⃣ Handling Section
+        # 2️⃣ Handling Section (SKIP OR UPDATE)
         # =========================
-        if handling_data:
-            HandlingBillSection.objects.create(
-                bill=bill,
-                **handling_data
+        handling_bill_number = handling_data.get("bill_number", None) if handling_data else None
+        if handling_data and not HandlingBillSection.objects.filter(bill_number=handling_bill_number).exists():
+            HandlingBillSection.objects.update_or_create(
+                bill_number=handling_data["bill_number"],
+                defaults={
+                    "bill": bill,
+                    **handling_data,
+                }
             )
 
         # =========================
-        # 3️⃣ Transport Depot Section
+        # 3️⃣ Transport Depot Section (SKIP OR UPDATE)
         # =========================
-        if depot_data:
+        depot_bill_number = depot_data.get("bill_number", None) if depot_data else None
+        if depot_data and not TransportDepotSection.objects.filter(bill_number=depot_bill_number).exists():
             depot_entries_ids = depot_data.pop("entries", [])
 
-            TransportDepotSection.objects.create(
+            depot_section, _ = TransportDepotSection.objects.update_or_create(
                 bill=bill,
-                **depot_data
+                defaults=depot_data
             )
 
-            # SAFE UPDATE (no bulk update bypassing clean)
             depot_entries = DealerEntry.objects.filter(
                 id__in=depot_entries_ids,
                 service_bill__isnull=True
@@ -469,44 +547,59 @@ class ServiceBillCreateSerializer(serializers.ModelSerializer):
 
             for entry in depot_entries:
                 entry.service_bill = bill
-                entry.range_entry.destination_entry.service_bill = bill
-                entry.range_entry.destination_entry.transport_type = "TRANSPORT_DEPOT"
-                entry.range_entry.destination_entry.save()
+
+                dest_entry = entry.range_entry.destination_entry
+                dest_entry.service_bill = bill
+                dest_entry.transport_type = "TRANSPORT_DEPOT"
+                dest_entry.save()
+
                 entry.save()
 
         # =========================
-        # 4️⃣ Transport FOL Section
+        # 4️⃣ Transport FOL Section (SKIP OR UPDATE)
         # =========================
-        if fol_data:
-            fol_slabs = fol_data.pop("slabs", [])
+        fol_bill_number = fol_data.get("bill_number", None) if fol_data else None
+        if fol_data and not TransportFOLSection.objects.filter(bill_number=fol_bill_number).exists():
+            fol_slabs = fol_data.pop("slabs", [])                   
 
-            fol_section = TransportFOLSection.objects.create(
+            fol_section, _ = TransportFOLSection.objects.update_or_create(
                 bill=bill,
-                bill_number=fol_data["bill_number"],
-                rh_qty=fol_data.get("rh_qty", 0),
-                grand_total_qty=fol_data.get("total_fol_qty", 0),
-                grand_total_amount=fol_data.get("total_fol_amount", 0),
+                defaults={
+                    "bill_number": fol_data["bill_number"],
+                    "rh_qty": fol_data.get("rh_qty", 0),
+                    "grand_total_qty": fol_data.get("grand_total_qty", 0),
+                    "grand_total_amount": fol_data.get("grand_total_amount", 0),
+                }
             )
+
+            # optional: clear old slabs on update
+            fol_section.slabs.all().delete()
 
             for slab in fol_slabs:
                 destinations = slab.pop("destinations", [])
 
                 fol_slab = TransportFOLSlab.objects.create(
                     fol_section=fol_section,
-                    range_slab=slab["range_slab"],
-                    rate=slab.get("rate"),
-                    range_total_qty=slab.get("range_total_qty"),
-                    range_total_mtk=slab.get("range_total_mtk"),
-                    range_total_amount=slab.get("range_total_amount"),
+                    **slab
                 )
 
                 for dest in destinations:
                     TransportFOLDestination.objects.create(
                         fol_slab=fol_slab,
-                        destination_place=dest.get("destination_place"),
-                        qty_mt=dest["qty_mt"],
-                        qty_mtk=dest["qty_mtk"],
-                        amount=dest["amount"],
+                        **dest
                     )
 
-        return bill 
+        return bill
+
+    
+    def to_representation(self, instance):
+        instance = (
+            ServiceBill.objects
+            .select_related("handling", "transport_depot", "transport_fol")
+            .prefetch_related(
+                "transport_fol__slabs",
+                "transport_fol__slabs__destinations"
+            )
+            .get(pk=instance.pk)
+        )
+        return super().to_representation(instance)
