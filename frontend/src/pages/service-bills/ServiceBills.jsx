@@ -79,10 +79,6 @@ export default function ServiceBillList() {
     }
   };
 
-  if (loading) {
-    return <div className="p-4">Loading service bills...</div>;
-  }
-
   return (
     <div className="p-4 space-y-4">
       {/* Header */}
@@ -121,7 +117,12 @@ export default function ServiceBillList() {
       />
 
       {/* List */}
-      {bills.length === 0 ? (
+      {loading ? (
+        <div className="p-6 text-center text-gray-400">
+          Loading service bills...
+        </div>
+      ) : bills.length === 0 ? (
+
         <div className="text-gray-500">No service bills found.</div>
       ) : (
         <div className="border rounded-md overflow-hidden">
@@ -204,6 +205,5 @@ export default function ServiceBillList() {
           </div>
         </div>
       )}
-    </div>
-  );
+    </div>) 
 }

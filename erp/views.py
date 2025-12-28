@@ -761,7 +761,46 @@ class DestinationEntryViewSet(BaseViewSet):
 class ServiceBillViewSet(BaseViewSet):
     queryset = ServiceBill.objects.all()
     serializer_class = ServiceBillCreateSerializer
+    search_fields = [
+        "id",
+        "bill_date",
+        "handling__bill_number",
+        "transport_depot__bill_number",
+        "transport_fol__bill_number",
+    ]
 
     @transaction.atomic
     def perform_create(self, serializer):
         serializer.save()
+        
+    @action(
+        detail=False,
+        methods=["delete"],
+        url_path="bulk-delete"
+    )
+    @transaction.atomic
+    def bulk_delete(self, request):
+        ids = request.query_params.get("ids")
+
+        if not ids:
+            return Response(
+                {"detail": "No IDs provided"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        id_list = [int(i) for i in ids.split(",") if i.isdigit()]
+
+        if not id_list:
+            return Response(
+                {"detail": "Invalid ID list"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        qs = ServiceBill.objects.filter(id__in=id_list)
+        deleted_count = qs.count()
+        qs.delete()
+
+        return Response(
+            {"deleted": deleted_count},
+            status=status.HTTP_200_OK
+        )
