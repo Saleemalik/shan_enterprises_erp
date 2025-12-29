@@ -584,10 +584,17 @@ class ServiceBillCreateSerializer(serializers.ModelSerializer):
                 )
 
                 for dest in destinations:
+                    destination_entry_id = dest.pop("id")
                     TransportFOLDestination.objects.create(
                         fol_slab=fol_slab,
                         **dest
                     )
+                    if DestinationEntry.objects.get(id=destination_entry_id).service_bill:
+                        continue
+                    dest_entry = DestinationEntry.objects.get(id=destination_entry_id)
+                    dest_entry.service_bill = bill
+                    dest_entry.transport_type = "TRANSPORT_FOL"
+                    dest_entry.save()
 
         return bill
 
