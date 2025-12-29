@@ -1,20 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import axiosInstance from "../../api/axiosConfig";
 import { Link } from "react-router-dom";
 
-export default function TransportDepotSection({ data = {}, onChange }) {
+export default function TransportDepotSection({
+  data = {},
+  serviceBillId,
+  onChange,
+}) {
   const [entries, setEntries] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
-  const allSelected =
-    entries.length > 0 && selectedIds.length === entries.length;
 
-  const someSelected =
-    selectedIds.length > 0 && selectedIds.length < entries.length;
-
-  const serviceBillId = data?.id;
+  // 🔒 Prevent re-initialization loop
+  const initializedRef = useRef(false);
 
   /* ----------------------------------
-   * Load UNBILLED DEPOT DEALER ENTRIES
+   * Load depot dealer entries
    * ---------------------------------- */
   useEffect(() => {
     axiosInstance
@@ -28,64 +28,83 @@ export default function TransportDepotSection({ data = {}, onChange }) {
   }, [serviceBillId]);
 
   /* ----------------------------------
-   * Selected rows (derived)
+   * Initialize selection ONCE (edit mode)
+   * ---------------------------------- */
+  useEffect(() => {
+    if (
+      !initializedRef.current &&
+      Array.isArray(data.entries)
+    ) {
+      setSelectedIds(data.entries);
+      initializedRef.current = true;
+    }
+  }, [data.entries]);
+
+  /* ----------------------------------
+   * Derived rows
    * ---------------------------------- */
   const selectedRows = useMemo(() => {
-    
     return entries.filter((e) => selectedIds.includes(e.id));
   }, [entries, selectedIds]);
 
-  useEffect(() => {
-    if (Array.isArray(data.entries)) {
-      setSelectedIds(data.entries);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data?.id]);
-
   /* ----------------------------------
-   * Auto totals
+   * Totals (pure calculation)
    * ---------------------------------- */
-  useEffect(() => {
-    const totalQty = selectedRows.reduce(
-      (sum, r) => sum + Number(r.qty_mt || 0),
+  const totals = useMemo(() => {
+    const qty = selectedRows.reduce(
+      (s, r) => s + Number(r.qty_mt || 0),
+      0
+    );
+    const amount = selectedRows.reduce(
+      (s, r) => s + Number(r.amount || 0),
       0
     );
 
-    const totalAmount = selectedRows.reduce(
-      (sum, r) => sum + Number(r.amount || 0),
-      0
-    );
-
-    onChange("entries", selectedIds);
-    onChange("total_depot_qty", totalQty.toFixed(3));
-    onChange("total_depot_amount", totalAmount.toFixed(2));
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return {
+      qty: qty.toFixed(3),
+      amount: amount.toFixed(2),
+    };
   }, [selectedRows]);
 
   /* ----------------------------------
-   * Toggle row by UNIQUE dealer entry id
+   * USER ACTIONS → sync to parent
    * ---------------------------------- */
+  const commitChange = (ids) => {
+    setSelectedIds(ids);
+    onChange("entries", ids);
+    onChange("total_depot_qty", totals.qty);
+    onChange("total_depot_amount", totals.amount);
+  };
+
   const toggleRow = (id) => {
-    setSelectedIds((prev) =>
-      prev.includes(id)
-        ? prev.filter((x) => x !== id)
-        : [...prev, id]
+    commitChange(
+      selectedIds.includes(id)
+        ? selectedIds.filter((x) => x !== id)
+        : [...selectedIds, id]
     );
   };
 
   const toggleSelectAll = () => {
-    if (allSelected) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(entries.map((e) => e.id));
-    }
+    commitChange(
+      selectedIds.length === entries.length
+        ? []
+        : entries.map((e) => e.id)
+    );
   };
 
+  const allSelected =
+    entries.length > 0 &&
+    selectedIds.length === entries.length;
 
+  const someSelected =
+    selectedIds.length > 0 &&
+    selectedIds.length < entries.length;
+
+  /* ----------------------------------
+   * Render
+   * ---------------------------------- */
   return (
     <div className="space-y-6 text-sm">
-
       {/* Depot bill number */}
       <div className="w-1/3">
         <label className="block mb-1 font-medium">
@@ -94,16 +113,18 @@ export default function TransportDepotSection({ data = {}, onChange }) {
         <input
           className="border p-1.5 rounded w-full"
           value={data.bill_number || ""}
-          onChange={(e) => onChange("bill_number", e.target.value)}
+          onChange={(e) =>
+            onChange("bill_number", e.target.value)
+          }
         />
       </div>
 
-      {/* Selection table */}
+      {/* Table */}
       <div className="border rounded overflow-x-auto">
         <table className="w-full border-collapse text-center">
           <thead>
             <tr className="bg-gray-100 font-semibold">
-              <th className="border p-2 w-10 text-center">
+              <th className="border p-2 w-10">
                 <input
                   type="checkbox"
                   checked={allSelected}
@@ -122,7 +143,6 @@ export default function TransportDepotSection({ data = {}, onChange }) {
             </tr>
           </thead>
 
-
           <tbody>
             {entries.map((row) => {
               const checked = selectedIds.includes(row.id);
@@ -140,56 +160,59 @@ export default function TransportDepotSection({ data = {}, onChange }) {
                     />
                   </td>
 
-                  {/* 🔗 Destination link */}
                   <td className="border p-2 text-left">
-
-                     <Link
+                    <Link
                       to={`/app/destination-entries/${row.destination_entry_id}`}
-                       target="_blank"
-                       className="text-blue-600 hover:underline"
+                      target="_blank"
+                      className="text-blue-600 hover:underline"
                     >
                       {row.destination}
                     </Link>
                   </td>
 
                   <td className="border p-2">
-                    {row.qty_mt?.toFixed(3)}
+                    {Number(row.qty_mt).toFixed(3)}
+                  </td>
+
+                  <td className="border p-2">{row.km}</td>
+
+                  <td className="border p-2">
+                    {Number(row.mt_km).toFixed(2)}
                   </td>
 
                   <td className="border p-2">
-                    {row.km}
-                  </td>
-
-                  <td className="border p-2">
-                    {row.mt_km?.toFixed(2)}
-                  </td>
-
-                  <td className="border p-2">
-                    {row.rate?.toFixed(2)}
+                    {Number(row.rate).toFixed(2)}
                   </td>
 
                   <td className="border p-2 font-medium">
-                    {row.amount?.toFixed(2)}
+                    {Number(row.amount).toFixed(2)}
                   </td>
                 </tr>
               );
             })}
+
+            {entries.length === 0 && (
+              <tr>
+                <td
+                  colSpan={7}
+                  className="border p-4 text-gray-500"
+                >
+                  No depot entries available
+                </td>
+              </tr>
+            )}
           </tbody>
 
-          {/* Totals */}
           <tfoot>
             <tr className="font-semibold bg-gray-50">
               <td className="border p-2" colSpan={2}>
                 TOTAL
               </td>
               <td className="border p-2">
-                {data.total_depot_qty || "0.000"}
+                {totals.qty}
               </td>
-              <td className="border p-2"></td>
-              <td className="border p-2"></td>
-              <td className="border p-2"></td>
-              <td className="border p-2">
-                {data.total_depot_amount || "0.00"}
+              <td colSpan={4} className="border p-2">
+                {totals.amount}
               </td>
             </tr>
           </tfoot>
