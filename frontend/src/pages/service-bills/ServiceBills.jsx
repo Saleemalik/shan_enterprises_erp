@@ -148,7 +148,7 @@ export default function ServiceBillList() {
                     ? "border-blue-500 bg-blue-50"
                     : ""
                 }`}
-                onClick={() => navigate(`/service-bills/${bill.id}`)}
+                onClick={() => navigate(`/app/service-bills/${bill.id}`)}
               >
                 <div className="flex justify-between items-start">
                   <div className="flex gap-2">

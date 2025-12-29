@@ -13,6 +13,7 @@ import DestinationEntryCreate from "./pages/DestinationEntryCreate";
 import DestinationEntryEdit from "./pages/DestinationEntryEdit";
 import ServiceBillList from "./pages/service-bills/ServiceBills";
 import ServiceBillCreate from "./pages/service-bills/ServiceBillCreate";
+import ServiceBillEdit from "./pages/service-bills/ServiceBillEdit";
 
 export default function App() {
   return (
@@ -43,6 +44,7 @@ export default function App() {
           <Route path="service-bills/*">
             <Route index element={<ServiceBillList />} />
             <Route path="create" element={<ServiceBillCreate />} />
+            <Route path=":id" element={<ServiceBillEdit />} />
           </Route>
         </Route>
       </Routes>
