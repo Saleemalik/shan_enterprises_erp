@@ -1,6 +1,6 @@
 import os
 from .models import Dealer, Place, Destination, RateRange, DestinationEntry, RangeEntry, DealerEntry, ServiceBill
-from .serializers import DealerSerializer, PlaceSerializer, DestinationSerializer, RateRangeSerializer, DestinationEntrySerializer, DestinationEntryWriteSerializer, DestinationEntryDetailSerializer, TransportDepotDealerEntrySerializer, ServiceBillCreateSerializer
+from .serializers import DealerSerializer, PlaceSerializer, DestinationSerializer, RateRangeSerializer, DestinationEntrySerializer, DestinationEntryWriteSerializer, DestinationEntryDetailSerializer, TransportDepotDealerEntrySerializer, ServiceBillSerializer
 from django.db.models import Q
 from .base import AppBaseViewSet, BaseViewSet
 import pandas as pd
@@ -761,7 +761,7 @@ class DestinationEntryViewSet(BaseViewSet):
 
 class ServiceBillViewSet(BaseViewSet):
     queryset = ServiceBill.objects.all()
-    serializer_class = ServiceBillCreateSerializer
+    serializer_class = ServiceBillSerializer
     search_fields = [
         "id",
         "bill_date",

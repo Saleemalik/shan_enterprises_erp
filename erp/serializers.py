@@ -516,110 +516,145 @@ class TransportFOLSectionSerializer(serializers.ModelSerializer):
 
         return list(qs)
 
-
-class ServiceBillCreateSerializer(serializers.ModelSerializer):
+class ServiceBillSerializer(serializers.ModelSerializer):
     handling = HandlingSectionSerializer(required=False, allow_null=True)
-    depot = TransportDepotSectionSerializer(required=False, source="transport_depot", allow_null=True)
-    fol = TransportFOLSectionSerializer(required=False, source="transport_fol", allow_null=True)
+    depot = TransportDepotSectionSerializer(
+        required=False,
+        source="transport_depot",
+        allow_null=True
+    )
+    fol = TransportFOLSectionSerializer(
+        required=False,
+        source="transport_fol",
+        allow_null=True
+    )
 
     class Meta:
         model = ServiceBill
         fields = "__all__"
-    
+
+    # =========================
+    # PRIVATE HELPERS
+    # =========================
+
+    def _sync_handling(self, bill, handling_data):
+        if handling_data is None:
+            return
+
+        HandlingBillSection.objects.update_or_create(
+            bill=bill,
+            defaults=handling_data,
+        )
+
+    def _sync_depot(self, bill, depot_data):
+        if depot_data is None:
+            return
+
+        depot_entries_ids = depot_data.pop("entries", [])
+
+        depot_section, _ = TransportDepotSection.objects.update_or_create(
+            bill=bill,
+            defaults=depot_data
+        )
+
+        # unlink removed entries
+        DealerEntry.objects.filter(
+            service_bill=bill
+        ).exclude(
+            id__in=depot_entries_ids
+        ).update(service_bill=None)
+
+        # link selected entries
+        DealerEntry.objects.filter(
+            id__in=depot_entries_ids
+        ).update(service_bill=bill)
+
+    def _sync_fol(self, bill, fol_data):
+        if fol_data is None:
+            return
+
+        fol_slabs = fol_data.pop("slabs", [])
+
+        fol_section, _ = TransportFOLSection.objects.update_or_create(
+            bill=bill,
+            defaults={
+                "bill_number": fol_data["bill_number"],
+                "rh_qty": fol_data.get("rh_qty", 0),
+                "grand_total_qty": fol_data.get("grand_total_qty", 0),
+                "grand_total_amount": fol_data.get("grand_total_amount", 0),
+            }
+        )
+
+        # unlink old destination entries
+        DestinationEntry.objects.filter(
+            transport_fol_destinations__fol_slab__fol_section=fol_section
+        ).update(
+            service_bill=None,
+            transport_type=None
+        )
+
+        # clear old slabs
+        fol_section.slabs.all().delete()
+
+        # recreate slabs + destinations
+        for slab in fol_slabs:
+            destinations = slab.pop("destinations", [])
+
+            fol_slab = TransportFOLSlab.objects.create(
+                fol_section=fol_section,
+                **slab
+            )
+
+            for dest in destinations:
+                TransportFOLDestination.objects.create(
+                    fol_slab=fol_slab,
+                    **dest
+                )
+
+                DestinationEntry.objects.filter(
+                    id=dest["destination_entry_id"]
+                ).update(
+                    service_bill=bill,
+                    transport_type="TRANSPORT_FOL"
+                )
+
+    # =========================
+    # CREATE
+    # =========================
     @transaction.atomic
     def create(self, validated_data):
         handling_data = validated_data.pop("handling", None)
-        depot_data = validated_data.pop("transport_depot", None)   # ✅ FIX
-        fol_data = validated_data.pop("transport_fol", None)    
+        depot_data = validated_data.pop("transport_depot", None)
+        fol_data = validated_data.pop("transport_fol", None)
 
-        # =========================
-        # 1️⃣ Create Service Bill
-        # =========================
         bill = ServiceBill.objects.create(**validated_data)
 
-        # =========================
-        # 2️⃣ Handling Section (SKIP OR UPDATE)
-        # =========================
-        handling_bill_number = handling_data.get("bill_number", None) if handling_data else None
-        if handling_data and not HandlingBillSection.objects.filter(bill_number=handling_bill_number).exists():
-            HandlingBillSection.objects.update_or_create(
-                bill_number=handling_data["bill_number"],
-                defaults={
-                    "bill": bill,
-                    **handling_data,
-                }
-            )
-
-        # =========================
-        # 3️⃣ Transport Depot Section (SKIP OR UPDATE)
-        # =========================
-        depot_bill_number = depot_data.get("bill_number", None) if depot_data else None
-        if depot_data and not TransportDepotSection.objects.filter(bill_number=depot_bill_number).exists():
-            depot_entries_ids = depot_data.pop("entries", [])
-
-            depot_section, _ = TransportDepotSection.objects.update_or_create(
-                bill=bill,
-                defaults=depot_data
-            )
-
-            depot_entries = DealerEntry.objects.filter(
-                id__in=depot_entries_ids,
-                service_bill__isnull=True
-            )
-
-            for entry in depot_entries:
-                entry.service_bill = bill
-
-                dest_entry = entry.range_entry.destination_entry
-                dest_entry.service_bill = bill
-                dest_entry.transport_type = "TRANSPORT_DEPOT"
-                dest_entry.save()
-
-                entry.save()
-
-        # =========================
-        # 4️⃣ Transport FOL Section (SKIP OR UPDATE)
-        # =========================
-        fol_bill_number = fol_data.get("bill_number", None) if fol_data else None
-        if fol_data and not TransportFOLSection.objects.filter(bill_number=fol_bill_number).exists():
-            fol_slabs = fol_data.pop("slabs", [])                   
-
-            fol_section, _ = TransportFOLSection.objects.update_or_create(
-                bill=bill,
-                defaults={
-                    "bill_number": fol_data["bill_number"],
-                    "rh_qty": fol_data.get("rh_qty", 0),
-                    "grand_total_qty": fol_data.get("grand_total_qty", 0),
-                    "grand_total_amount": fol_data.get("grand_total_amount", 0),
-                }
-            )
-
-            # optional: clear old slabs on update
-            fol_section.slabs.all().delete()
-
-            for slab in fol_slabs:
-                destinations = slab.pop("destinations", [])
-
-                fol_slab = TransportFOLSlab.objects.create(
-                    fol_section=fol_section,
-                    **slab
-                )
-
-                for dest in destinations:
-                    TransportFOLDestination.objects.create(
-                        fol_slab=fol_slab,
-                        **dest
-                    )
-                    if DestinationEntry.objects.get(id=dest["destination_entry_id"]).service_bill:
-                        continue
-                    dest_entry = DestinationEntry.objects.get(id=dest["destination_entry_id"])
-                    dest_entry.service_bill = bill
-                    dest_entry.transport_type = "TRANSPORT_FOL"
-                    dest_entry.save()
+        self._sync_handling(bill, handling_data)
+        self._sync_depot(bill, depot_data)
+        self._sync_fol(bill, fol_data)
 
         return bill
 
-    
+    # =========================
+    # UPDATE
+    # =========================
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        handling_data = validated_data.pop("handling", None)
+        depot_data = validated_data.pop("transport_depot", None)
+        fol_data = validated_data.pop("transport_fol", None)
+
+        # update bill fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        self._sync_handling(instance, handling_data)
+        self._sync_depot(instance, depot_data)
+        self._sync_fol(instance, fol_data)
+
+        return instance
+
     def to_representation(self, instance):
         instance = (
             ServiceBill.objects
@@ -631,3 +666,4 @@ class ServiceBillCreateSerializer(serializers.ModelSerializer):
             .get(pk=instance.pk)
         )
         return super().to_representation(instance)
+    

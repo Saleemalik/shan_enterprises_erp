@@ -49,7 +49,6 @@ export default function ServiceBillEdit() {
     try {
       await axiosInstance.put(`/service-bills/${id}/`, form);
       alert("Service Bill updated");
-      debugger
       navigate(`/app/service-bills/${id}`);
     } catch (err) {
       console.error(err?.response?.data || err);
