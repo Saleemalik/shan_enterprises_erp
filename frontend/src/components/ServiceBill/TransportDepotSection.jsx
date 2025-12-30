@@ -3,10 +3,18 @@ import axiosInstance from "../../api/axiosConfig";
 import { Link } from "react-router-dom";
 
 export default function TransportDepotSection({
-  data = {},
+  data,
   serviceBillId,
   onChange,
 }) {
+  /* ----------------------------------
+   * Normalize data (NULL SAFE)
+   * ---------------------------------- */
+  const safeData = data ?? {};
+  const initialEntries = Array.isArray(safeData.entries)
+    ? safeData.entries
+    : [];
+
   const [entries, setEntries] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
 
@@ -33,12 +41,12 @@ export default function TransportDepotSection({
   useEffect(() => {
     if (
       !initializedRef.current &&
-      Array.isArray(data.entries)
+      initialEntries.length > 0
     ) {
-      setSelectedIds(data.entries);
+      setSelectedIds(initialEntries);
       initializedRef.current = true;
     }
-  }, [data.entries]);
+  }, [initialEntries]);
 
   /* ----------------------------------
    * Derived rows
@@ -52,11 +60,11 @@ export default function TransportDepotSection({
    * ---------------------------------- */
   const totals = useMemo(() => {
     const qty = selectedRows.reduce(
-      (s, r) => s + Number(r.qty_mt || 0),
+      (s, r) => s + Number(r?.qty_mt || 0),
       0
     );
     const amount = selectedRows.reduce(
-      (s, r) => s + Number(r.amount || 0),
+      (s, r) => s + Number(r?.amount || 0),
       0
     );
 
@@ -71,9 +79,12 @@ export default function TransportDepotSection({
    * ---------------------------------- */
   const commitChange = (ids) => {
     setSelectedIds(ids);
-    onChange("entries", ids);
-    onChange("total_depot_qty", totals.qty);
-    onChange("total_depot_amount", totals.amount);
+
+    if (onChange) {
+      onChange("entries", ids);
+      onChange("total_depot_qty", totals.qty);
+      onChange("total_depot_amount", totals.amount);
+    }
   };
 
   const toggleRow = (id) => {
@@ -112,9 +123,9 @@ export default function TransportDepotSection({
         </label>
         <input
           className="border p-1.5 rounded w-full"
-          value={data.bill_number || ""}
+          value={safeData.bill_number || ""}
           onChange={(e) =>
-            onChange("bill_number", e.target.value)
+            onChange?.("bill_number", e.target.value)
           }
         />
       </div>
@@ -166,26 +177,28 @@ export default function TransportDepotSection({
                       target="_blank"
                       className="text-blue-600 hover:underline"
                     >
-                      {row.destination}
+                      {row.destination || "-"}
                     </Link>
                   </td>
 
                   <td className="border p-2">
-                    {Number(row.qty_mt).toFixed(3)}
-                  </td>
-
-                  <td className="border p-2">{row.km}</td>
-
-                  <td className="border p-2">
-                    {Number(row.mt_km).toFixed(2)}
+                    {Number(row.qty_mt || 0).toFixed(3)}
                   </td>
 
                   <td className="border p-2">
-                    {Number(row.rate).toFixed(2)}
+                    {row.km ?? "-"}
+                  </td>
+
+                  <td className="border p-2">
+                    {Number(row.mt_km || 0).toFixed(2)}
+                  </td>
+
+                  <td className="border p-2">
+                    {Number(row.rate || 0).toFixed(2)}
                   </td>
 
                   <td className="border p-2 font-medium">
-                    {Number(row.amount).toFixed(2)}
+                    {Number(row.amount || 0).toFixed(2)}
                   </td>
                 </tr>
               );
@@ -208,9 +221,7 @@ export default function TransportDepotSection({
               <td className="border p-2" colSpan={2}>
                 TOTAL
               </td>
-              <td className="border p-2">
-                {totals.qty}
-              </td>
+              <td className="border p-2">{totals.qty}</td>
               <td colSpan={4} className="border p-2">
                 {totals.amount}
               </td>
