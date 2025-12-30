@@ -271,6 +271,12 @@ class TransportFOLDestination(models.Model):
         related_name="destinations",
         on_delete=models.CASCADE
     )
+    destination_entry = models.ForeignKey(
+        DestinationEntry,
+        on_delete=models.SET_NULL,
+        related_name="transport_fol_destinations",
+        blank=True, null=True,
+    )
     destination_place = models.CharField(max_length=50, blank=True, null=True)  # "Destination Name (Place Name)"
     qty_mt = models.FloatField()
     qty_mtk = models.FloatField()

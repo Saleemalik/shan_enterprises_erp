@@ -454,7 +454,9 @@ class TransportFOLSectionSerializer(serializers.ModelSerializer):
         write_only=True,
         required=False
     )
-
+    
+    destination_entry_ids = serializers.SerializerMethodField(read_only=True)
+    
     class Meta:
         model = TransportFOLSection
         exclude = ("bill",)
@@ -482,18 +484,38 @@ class TransportFOLSectionSerializer(serializers.ModelSerializer):
                 "range_total_amount": slab.range_total_amount,
                 "destinations": [
                     {
+                        "id": d.id,
+                        "destination_entry_id": d.destination_entry.id,
                         "destination_place": d.destination_place,
                         "qty_mt": d.qty_mt,
                         "qty_mtk": d.qty_mtk,
                         "amount": d.amount,
                     }
-                    for d in slab.destinations.all()
+                    for d in slab.destinations.all() # transport_fol_destinations not destinations
                 ]
             })
 
         # READ: inject slabs into output
         data["slabs"] = slabs_data
         return data
+    
+    def get_destination_entry_ids(self, instance):
+        """
+        Collect UNIQUE destination_entry IDs
+        used in this Transport FOL Section
+        """
+        qs = (
+            TransportFOLDestination.objects
+            .filter(
+                fol_slab__fol_section=instance,
+                destination_entry__isnull=False
+            )
+            .values_list("destination_entry_id", flat=True)
+            .distinct()
+        )
+
+        return list(qs)
+
 
 class ServiceBillCreateSerializer(serializers.ModelSerializer):
     handling = HandlingSectionSerializer(required=False, allow_null=True)
@@ -584,14 +606,13 @@ class ServiceBillCreateSerializer(serializers.ModelSerializer):
                 )
 
                 for dest in destinations:
-                    destination_entry_id = dest.pop("id")
                     TransportFOLDestination.objects.create(
                         fol_slab=fol_slab,
                         **dest
                     )
-                    if DestinationEntry.objects.get(id=destination_entry_id).service_bill:
+                    if DestinationEntry.objects.get(id=dest["destination_entry_id"]).service_bill:
                         continue
-                    dest_entry = DestinationEntry.objects.get(id=destination_entry_id)
+                    dest_entry = DestinationEntry.objects.get(id=dest["destination_entry_id"])
                     dest_entry.service_bill = bill
                     dest_entry.transport_type = "TRANSPORT_FOL"
                     dest_entry.save()

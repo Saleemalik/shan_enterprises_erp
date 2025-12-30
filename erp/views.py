@@ -726,7 +726,7 @@ class DestinationEntryViewSet(BaseViewSet):
                 slab_amount += dest_amount
 
                 destination_rows.append({
-                    "id": entry.destination_entry_id,
+                    "destination_entry_id": entries[0].destination_entry_id,
                     "destination_place": destination.place,
                     "qty_mt": round(dest_qty, 2),
                     "qty_mtk": round(dest_mtk, 2),
