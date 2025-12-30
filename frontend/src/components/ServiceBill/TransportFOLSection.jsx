@@ -1,27 +1,27 @@
-// components/ServiceBill/TransportFOLSection.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import axiosInstance from "../../api/axiosConfig";
 
-export default function TransportFOLSection({ data = {}, onChange }) {
-  const [slabs, setSlabs] = useState([]);
-  const [selectedIds, setSelectedIds] = useState(
-    data.destination_entry_ids || []
-  );
-
-  const [activeTab, setActiveTab] = useState("select"); // select | preview
-  const [rhQty, setRhQty] = useState(data.rh_qty || "");
+export default function TransportFOLSection({
+  data = {},
+  serviceBillId,
+  onChange,
+}) {
+  /* ----------------------------------
+   * Local state
+   * ---------------------------------- */
+  const [rows, setRows] = useState([]); // destination entries
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [rhQty, setRhQty] = useState("");
   const [previewData, setPreviewData] = useState(null);
+  const [activeTab, setActiveTab] = useState("select");
   const [loadingPreview, setLoadingPreview] = useState(false);
 
-  const serviceBillId = data?.id;
+  // 🔒 prevent edit re-hydration loop
+  const initializedRef = useRef(false);
 
-  const allSelected =
-    slabs.length > 0 && selectedIds.length === slabs.length;
-
-  const someSelected =
-    selectedIds.length > 0 && selectedIds.length < slabs.length;
-
-  /* ───────── Fetch unbilled + current service bill entries ───────── */
+  /* ----------------------------------
+   * Load unbilled + edit rows
+   * ---------------------------------- */
   useEffect(() => {
     axiosInstance
       .get("/destination-entries/transport-fol-unbilled/", {
@@ -29,20 +29,70 @@ export default function TransportFOLSection({ data = {}, onChange }) {
           service_bill_id: serviceBillId || undefined,
         },
       })
-      .then((res) => setSlabs(res.data))
-      .catch((err) => console.error(err));
+      .then((res) => {
+        setRows(res.data || []);
+      })
+      .catch(console.error);
   }, [serviceBillId]);
 
-  /* ───────── Hydrate selection (edit mode) ───────── */
+  /* ----------------------------------
+   * Initialize from EDIT data (ONCE)
+   * ---------------------------------- */
   useEffect(() => {
-    if (data.destination_entry_ids) {
+    if (initializedRef.current) return;
+
+    if (Array.isArray(data.destination_entry_ids)) {
       setSelectedIds(data.destination_entry_ids);
     }
-    if (data.rh_qty) {
+
+    if (data.rh_qty !== undefined && data.rh_qty !== null) {
       setRhQty(data.rh_qty);
     }
-  }, [data.destination_entry_ids, data.rh_qty]);
 
+    if (Array.isArray(data.slabs) && data.slabs.length) {
+      setPreviewData({
+        slabs: data.slabs,
+        rh_qty: data.rh_qty,
+        grand_total_qty: data.grand_total_qty,
+        grand_total_amount: data.grand_total_amount,
+      });
+      setActiveTab("preview");
+    }
+
+    initializedRef.current = true;
+  }, [
+    data.destination_entry_ids,
+    data.rh_qty,
+    data.slabs,
+    data.grand_total_qty,
+    data.grand_total_amount,
+  ]);
+
+  /* ----------------------------------
+   * Invalidate preview when RH qty changes
+   * ---------------------------------- */
+  useEffect(() => {
+    if (previewData) {
+      setPreviewData(null);
+      setActiveTab("select");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rhQty]);
+
+  /* ----------------------------------
+   * Derived checkbox state (SAFE)
+   * ---------------------------------- */
+  const allSelected =
+    rows.length > 0 &&
+    rows.every((r) => selectedIds.includes(r.id)) &&
+    selectedIds.length === rows.length;
+
+  const someSelected =
+    selectedIds.length > 0 && !allSelected;
+
+  /* ----------------------------------
+   * Toggle helpers (USER ACTIONS ONLY)
+   * ---------------------------------- */
   const toggle = (id) => {
     setSelectedIds((prev) =>
       prev.includes(id)
@@ -55,14 +105,19 @@ export default function TransportFOLSection({ data = {}, onChange }) {
     if (allSelected) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(slabs.map((e) => e.id));
+      const rowIds = rows.map((r) => r.id);
+      setSelectedIds(
+        Array.from(new Set([...selectedIds, ...rowIds]))
+      );
     }
   };
 
-  /* ───────── Preview API ───────── */
+  /* ----------------------------------
+   * Load Preview (explicit action)
+   * ---------------------------------- */
   const loadPreview = async () => {
     if (!selectedIds.length) {
-      alert("Select at least one FOL destination entry");
+      alert("Select at least one FOL entry");
       return;
     }
 
@@ -82,13 +137,15 @@ export default function TransportFOLSection({ data = {}, onChange }) {
       setPreviewData(preview);
       setActiveTab("preview");
 
-      // 🔥 THIS IS THE MISSING PART
-      onChange("slabs", preview.slabs);
-      onChange("rh_qty", preview.rh_qty);
-      onChange("grand_total_qty", preview.grand_total_qty);
-      onChange("grand_total_amount", preview.grand_total_amount);
+      // ✅ Commit to parent ONCE
       onChange("destination_entry_ids", selectedIds);
-
+      onChange("rh_qty", preview.rh_qty);
+      onChange("slabs", preview.slabs);
+      onChange("grand_total_qty", preview.grand_total_qty);
+      onChange(
+        "grand_total_amount",
+        preview.grand_total_amount
+      );
     } catch (err) {
       console.error(err);
       alert("Failed to load preview");
@@ -97,9 +154,12 @@ export default function TransportFOLSection({ data = {}, onChange }) {
     }
   };
 
+  /* ----------------------------------
+   * Render
+   * ---------------------------------- */
   return (
     <div className="space-y-6 text-sm">
-      {/* ───── Tabs ───── */}
+      {/* Tabs */}
       <div className="flex border-b">
         <button
           className={`px-4 py-2 ${
@@ -125,10 +185,10 @@ export default function TransportFOLSection({ data = {}, onChange }) {
         </button>
       </div>
 
-      {/* ───────── SELECT TAB ───────── */}
+      {/* ───── SELECT TAB ───── */}
       {activeTab === "select" && (
         <>
-          {/* FOL Bill Number */}
+          {/* Bill Number */}
           <div className="w-1/3">
             <label className="block mb-1 font-medium">
               FOL Bill Number
@@ -174,47 +234,55 @@ export default function TransportFOLSection({ data = {}, onChange }) {
                       onChange={toggleSelectAll}
                     />
                   </th>
-                  <th className="p-2 border">Destination</th>
-                  <th className="p-2 border">Date</th>
-                  <th className="p-2 border">Bill No</th>
-                  <th className="p-2 border">Ranges</th>
+                  <th className="border p-2">
+                    Destination
+                  </th>
+                  <th className="border p-2">Date</th>
+                  <th className="border p-2">
+                    Bill No
+                  </th>
+                  <th className="border p-2">
+                    Ranges
+                  </th>
                 </tr>
               </thead>
 
               <tbody>
-                {slabs.map((r) => (
-                  <tr
-                    key={r.id}
-                    className="hover:bg-gray-50"
-                  >
-                    <td className="p-2 border text-center">
+                {rows.map((r) => (
+                  <tr key={r.id}>
+                    <td className="border p-2 text-center">
                       <input
                         type="checkbox"
-                        checked={selectedIds.includes(r.id)}
-                        onChange={() => toggle(r.id)}
+                        checked={selectedIds.includes(
+                          r.id
+                        )}
+                        onChange={() =>
+                          toggle(r.id)
+                        }
                       />
                     </td>
-                    <td className="p-2 border">
+                    <td className="border p-2">
                       {r.destination?.name}
                     </td>
-                    <td className="p-2 border">{r.date}</td>
-                    <td className="p-2 border">
+                    <td className="border p-2">
+                      {r.date}
+                    </td>
+                    <td className="border p-2">
                       {r.bill_number}
                     </td>
-                    <td className="p-2 border">
-                      {r.rate_ranges.join(", ")}
+                    <td className="border p-2">
+                      {r.rate_ranges?.join(", ")}
                     </td>
                   </tr>
                 ))}
 
-                {slabs.length === 0 && (
+                {rows.length === 0 && (
                   <tr>
                     <td
                       colSpan={5}
                       className="p-4 text-center text-gray-500"
                     >
-                      No unbilled Transport FOL entries
-                      found
+                      No Transport FOL entries found
                     </td>
                   </tr>
                 )}
@@ -236,7 +304,7 @@ export default function TransportFOLSection({ data = {}, onChange }) {
         </>
       )}
 
-      {/* ───────── PREVIEW TAB ───────── */}
+      {/* ───── PREVIEW TAB ───── */}
       {activeTab === "preview" && previewData && (
         <div className="space-y-6">
           {previewData.slabs.map((row, idx) => (
@@ -267,24 +335,22 @@ export default function TransportFOLSection({ data = {}, onChange }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {row.destinations.map(
-                    (d, i) => (
-                      <tr key={i}>
-                        <td className="border p-1">
-                          {d.destination_place}
-                        </td>
-                        <td className="border p-1 text-right">
-                          {d.qty_mt}
-                        </td>
-                        <td className="border p-1 text-right">
-                          {d.qty_mtk}
-                        </td>
-                        <td className="border p-1 text-right">
-                          {d.amount}
-                        </td>
-                      </tr>
-                    )
-                  )}
+                  {row.destinations.map((d, i) => (
+                    <tr key={i}>
+                      <td className="border p-1">
+                        {d.destination_place}
+                      </td>
+                      <td className="border p-1 text-right">
+                        {d.qty_mt}
+                      </td>
+                      <td className="border p-1 text-right">
+                        {d.qty_mtk}
+                      </td>
+                      <td className="border p-1 text-right">
+                        {d.amount}
+                      </td>
+                    </tr>
+                  ))}
 
                   <tr className="font-semibold bg-gray-50">
                     <td className="border p-1 text-right">

@@ -49,6 +49,7 @@ export default function ServiceBillEdit() {
     try {
       await axiosInstance.put(`/service-bills/${id}/`, form);
       alert("Service Bill updated");
+      debugger
       navigate(`/app/service-bills/${id}`);
     } catch (err) {
       console.error(err?.response?.data || err);
@@ -177,7 +178,7 @@ export default function ServiceBillEdit() {
       {activeTab === "DEPOT" && (
         <TransportDepotSection
             data={form.depot}
-            serviceBillId={form.id}   // 🔥 REQUIRED
+            serviceBillId={form.id}
             onChange={(field, value) =>
                 updateField("depot", field, value)
             }
@@ -186,11 +187,12 @@ export default function ServiceBillEdit() {
 
       {/* FOL */}
       {activeTab === "FOL" && (
-        <TransportFOLSection
-          data={form.fol || {}}
-          onChange={(field, value) =>
-            updateField("fol", field, value)
-          }
+       <TransportFOLSection
+            data={form.fol}
+            serviceBillId={form.id}
+            onChange={(field, value) =>
+                updateField("fol", field, value)
+            }
         />
       )}
 
