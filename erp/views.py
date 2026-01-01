@@ -25,6 +25,9 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from reportlab.platypus import Flowable, Paragraph, KeepTogether
 from collections import defaultdict
 from .utils import fmt_km
+from .service_bill import generate_service_bill_pdf
+from django.http import HttpResponse
+
 
 
 
@@ -804,4 +807,15 @@ class ServiceBillViewSet(BaseViewSet):
         return Response(
             {"deleted": deleted_count},
             status=status.HTTP_200_OK
+        )
+     
+    @action(detail=True, methods=["GET"], url_path="export-pdf")
+    def export_pdf(self, request, pk=None):
+        pdf_buffer = generate_service_bill_pdf(pk)
+
+        return FileResponse(
+            pdf_buffer,
+            as_attachment=False,
+            filename=f"service-bill-{pk}.pdf",
+            content_type="application/pdf",
         )

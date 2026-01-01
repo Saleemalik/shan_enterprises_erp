@@ -62,6 +62,17 @@ export default function ServiceBillEdit() {
 
   const input = "border p-1.5 rounded w-full";
 
+  const handlePrint = async () => {
+
+    const response = await axiosInstance.get(
+      `/service-bills/${id}/export-pdf/`,
+      { responseType: "blob" }
+    );
+
+    const fileURL = URL.createObjectURL(response.data);
+    window.open(fileURL);
+  };
+
   return (
     <div>
       {/* Header */}
@@ -195,14 +206,22 @@ export default function ServiceBillEdit() {
         />
       )}
 
-      <div className="flex justify-end mt-6">
+      <div className="flex justify-end gap-3 mt-6">
         <button
           onClick={handleSubmit}
           className="px-6 py-2 bg-green-600 text-white rounded"
         >
           Update Service Bill
         </button>
+
+        <button
+          onClick={handlePrint}
+          className="px-6 py-2 bg-blue-600 text-white rounded"
+        >
+          Export PDF
+        </button>
       </div>
+
     </div>
   );
 }
