@@ -191,7 +191,7 @@ def build_handling_section(story, bill: ServiceBill):
     ))
     story.append(Spacer(1, 6))
     story.append(Paragraph(
-        f"<b>PRODUCT :</b> {bill.product}",
+        f"<b>PRODUCT : {bill.product}</b>",
         NORMAL
     ))
     story.append(Paragraph(
@@ -209,8 +209,8 @@ def build_handling_section(story, bill: ServiceBill):
     ))
     hsn_tbl = Table(
         [[
-            Paragraph(f"<b>HSN/SAC CODE :</b> {bill.hsn_code or '9967'}", NORMAL),
-            Paragraph(f"<b>YEAR :</b> {bill.year}", RIGHT),
+            Paragraph(f"<b>HSN/SAC CODE : {bill.hsn_code}</b>", NORMAL),
+            Paragraph(f"<b>YEAR : {bill.year}</b>", RIGHT),
         ]],
         colWidths=[260, 260],
     )
@@ -387,7 +387,7 @@ def build_depot_section(story, bill: ServiceBill):
     ))
     story.append(Spacer(1, 6))
 
-    story.append(Paragraph("<b>PRODUCT : FACTOMFOS</b>", NORMAL))
+    story.append(Paragraph(f"<b>PRODUCT : {bill.product}</b>", NORMAL))
     story.append(Paragraph("<b>WESTHILL RH</b>", NORMAL))
     story.append(Spacer(1, 8))
 
@@ -398,7 +398,7 @@ def build_depot_section(story, bill: ServiceBill):
 
     hsn_tbl = Table(
         [[
-            Paragraph("<b>HSN/SAC CODE : 9965</b>", NORMAL),
+            Paragraph(f"<b>HSN/SAC CODE : {bill.hsn_code}</b>", NORMAL),
             Paragraph(f"<b>YEAR : {bill.year}</b>", RIGHT),
         ]],
         colWidths=[260, 260],
@@ -590,7 +590,7 @@ def build_fol_section(story, bill: ServiceBill):
         ParagraphStyle("factgst", alignment=TA_CENTER, fontSize=9)
     ))
     story.append(Spacer(1, 6))
-    story.append(Paragraph("<b>PRODUCT : FACTOMFOS</b>", NORMAL))
+    story.append(Paragraph(f"<b>PRODUCT : {bill.product}</b>", NORMAL))
     story.append(Paragraph("<b>WESTHILL RH</b>", NORMAL))
     story.append(Spacer(1, 8))
 
@@ -601,7 +601,7 @@ def build_fol_section(story, bill: ServiceBill):
 
     hsn_tbl = Table(
         [[
-            Paragraph("<b>HSN/SAC CODE : 9965</b>", NORMAL),
+            Paragraph(f"<b>HSN/SAC CODE : {bill.hsn_code}</b>", NORMAL),
             Paragraph(f"<b>YEAR : {bill.year}</b>", RIGHT),
         ]],
         colWidths=[260, 260],
@@ -818,14 +818,24 @@ def generate_service_bill_pdf(service_bill_id):
 
     elements = []
 
-    # SECTION 1
-    build_handling_section(elements, bill)
+    # -------------------------------
+    # SECTION 1 – HANDLING
+    # -------------------------------
+    if getattr(bill, "handling", None):
+        build_handling_section(elements, bill)
 
-    # SECTION 2
-    build_depot_section(elements, bill)
+    # -------------------------------
+    # SECTION 2 – TRANSPORT DEPOT
+    # -------------------------------
+    if getattr(bill, "transport_depot", None):
+        build_depot_section(elements, bill)
 
-    # SECTION 3
-    build_fol_section(elements, bill)
+    # -------------------------------
+    # SECTION 3 – TRANSPORT FOL
+    # -------------------------------
+    fol = getattr(bill, "transport_fol", None)
+    if fol and fol.slabs.exists():
+        build_fol_section(elements, bill)
 
     doc.build(elements)
 
