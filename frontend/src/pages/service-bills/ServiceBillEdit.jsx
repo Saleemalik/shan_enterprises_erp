@@ -15,14 +15,54 @@ export default function ServiceBillEdit() {
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(null);
 
-  /* ----------------------------------
-   * Load existing Service Bill
-   * ---------------------------------- */
+  /* -------------------------------
+   * DEFAULT FORM (CRITICAL)
+   * ------------------------------- */
+  const EMPTY_FORM = {
+    bill_date: "",
+    to_address: "",
+    letter_note: "",
+    date_of_clearing: "",
+    product: "FACTOMFOS",
+    hsn_code: "",
+    year: "",
+
+    handling: null,
+
+    depot: {
+      bill_number: "",
+      total_depot_qty: "",
+      total_depot_amount: "",
+      entries: [],
+    },
+
+    fol: {
+      bill_number: "",
+      rh_qty: "",
+      grand_total_qty: "",
+      grand_total_amount: "",
+      slabs: [],
+    },
+  };
+
+  /* -------------------------------
+   * LOAD & MERGE SERVICE BILL
+   * ------------------------------- */
   useEffect(() => {
     axiosInstance
       .get(`/service-bills/${id}/`)
       .then((res) => {
-        setForm(res.data);
+        const data = res.data;
+
+        const merged = {
+          ...EMPTY_FORM,
+          ...data,
+          handling: data.handling || null,
+          depot: { ...EMPTY_FORM.depot, ...(data.depot || {}) },
+          fol: { ...EMPTY_FORM.fol, ...(data.fol || {}) },
+        };
+
+        setForm(merged);
         setLoading(false);
       })
       .catch(() => {
@@ -31,6 +71,9 @@ export default function ServiceBillEdit() {
       });
   }, [id]);
 
+  /* -------------------------------
+   * UPDATE HELPERS
+   * ------------------------------- */
   const updateField = (section, field, value) => {
     if (!section) {
       setForm((f) => ({ ...f, [field]: value }));
@@ -42,12 +85,45 @@ export default function ServiceBillEdit() {
     }
   };
 
-  /* ----------------------------------
-   * Submit update
-   * ---------------------------------- */
+  /* -------------------------------
+   * SUBMIT UPDATE (NORMALIZED)
+   * ------------------------------- */
   const handleSubmit = async () => {
     try {
-      await axiosInstance.put(`/service-bills/${id}/`, form);
+      const payload = {
+        bill_date: form.bill_date || null,
+        to_address: form.to_address || "",
+        letter_note: form.letter_note || "",
+        date_of_clearing: form.date_of_clearing || "",
+        product: form.product || "FACTOMFOS",
+        hsn_code: form.hsn_code || "",
+        year: form.year || "",
+
+        handling: form.handling?.bill_number
+          ? { ...form.handling }
+          : null,
+
+        depot: form.depot?.bill_number
+          ? {
+              bill_number: form.depot.bill_number,
+              total_depot_qty: form.depot.total_depot_qty || 0,
+              total_depot_amount: form.depot.total_depot_amount || 0,
+              entries: form.depot.entries || [],
+            }
+          : null,
+
+        fol: form.fol?.bill_number
+          ? {
+              bill_number: form.fol.bill_number,
+              rh_qty: form.fol.rh_qty || 0,
+              grand_total_qty: form.fol.grand_total_qty || 0,
+              grand_total_amount: form.fol.grand_total_amount || 0,
+              slabs: form.fol.slabs || [],
+            }
+          : null,
+      };
+
+      await axiosInstance.put(`/service-bills/${id}/`, payload);
       alert("Service Bill updated");
       navigate(`/app/service-bills/${id}`);
     } catch (err) {
@@ -56,22 +132,23 @@ export default function ServiceBillEdit() {
     }
   };
 
+  /* -------------------------------
+   * PDF EXPORT
+   * ------------------------------- */
+  const handlePrint = async () => {
+    const res = await axiosInstance.get(
+      `/service-bills/${id}/export-pdf/`,
+      { responseType: "blob" }
+    );
+    const fileURL = URL.createObjectURL(res.data);
+    window.open(fileURL);
+  };
+
   if (loading || !form) {
     return <div className="text-gray-500">Loading Service Bill...</div>;
   }
 
   const input = "border p-1.5 rounded w-full";
-
-  const handlePrint = async () => {
-
-    const response = await axiosInstance.get(
-      `/service-bills/${id}/export-pdf/`,
-      { responseType: "blob" }
-    );
-
-    const fileURL = URL.createObjectURL(response.data);
-    window.open(fileURL);
-  };
 
   return (
     <div>
@@ -127,7 +204,9 @@ export default function ServiceBillEdit() {
               <input
                 className={input}
                 value={form.year || ""}
-                onChange={(e) => updateField(null, "year", e.target.value)}
+                onChange={(e) =>
+                  updateField(null, "year", e.target.value)
+                }
               />
             </div>
 
@@ -171,38 +250,55 @@ export default function ServiceBillEdit() {
               }
             />
           </div>
+
+          {/* ✅ PRODUCT & HSN FIXED */}
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block mb-1 font-medium">Product</label>
+              <input
+                className={input}
+                value={form.product}
+                onChange={(e) =>
+                  updateField(null, "product", e.target.value)
+                }
+              />
+            </div>
+
+            <div>
+              <label className="block mb-1 font-medium">HSN / SAC</label>
+              <input
+                className={input}
+                value={form.hsn_code}
+                onChange={(e) =>
+                  updateField(null, "hsn_code", e.target.value)
+                }
+              />
+            </div>
+          </div>
         </div>
       )}
 
-      {/* HANDLING */}
+      {/* SECTIONS */}
       {activeTab === "HANDLING" && (
         <HandlingSection
           data={form.handling || {}}
-          onChange={(field, value) =>
-            updateField("handling", field, value)
-          }
+          onChange={(f, v) => updateField("handling", f, v)}
         />
       )}
 
-      {/* DEPOT */}
       {activeTab === "DEPOT" && (
         <TransportDepotSection
-            data={form.depot}
-            serviceBillId={form.id}
-            onChange={(field, value) =>
-                updateField("depot", field, value)
-            }
+          data={form.depot}
+          serviceBillId={form.id}
+          onChange={(f, v) => updateField("depot", f, v)}
         />
       )}
 
-      {/* FOL */}
       {activeTab === "FOL" && (
-       <TransportFOLSection
-            data={form.fol}
-            serviceBillId={form.id}
-            onChange={(field, value) =>
-                updateField("fol", field, value)
-            }
+        <TransportFOLSection
+          data={form.fol}
+          serviceBillId={form.id}
+          onChange={(f, v) => updateField("fol", f, v)}
         />
       )}
 
@@ -221,7 +317,6 @@ export default function ServiceBillEdit() {
           Export PDF
         </button>
       </div>
-
     </div>
   );
 }
