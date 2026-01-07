@@ -28,6 +28,31 @@ from .utils import fmt_km
 from .service_bill import generate_service_bill_pdf
 from django.http import HttpResponse
 
+# erp/views.py
+from erp.utils import get_machine_id
+from erp.models import License
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
+
+@api_view(["POST"])
+def activate_license(request):
+    key = request.data.get("license_key")
+    machine_id = get_machine_id()
+
+    if License.objects.filter(machine_id=machine_id).exists():
+        return Response({"error": "Already activated"}, status=400)
+
+    # SIMPLE LICENSE RULE (you control)
+    if key.startswith("SHAN-"):
+        License.objects.create(
+            machine_id=machine_id,
+            license_key=key
+        )
+        return Response({"status": "activated"})
+
+    return Response({"error": "Invalid key"}, status=400)
+
+
 
 
 

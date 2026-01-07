@@ -1,6 +1,13 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 
+class License(models.Model):
+    machine_id = models.CharField(max_length=64, unique=True)
+    license_key = models.CharField(max_length=100)
+    activated_on = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+
+
 class Destination(models.Model):
     name = models.CharField(max_length=255)
     place = models.CharField(max_length=255, null=True, blank=True)

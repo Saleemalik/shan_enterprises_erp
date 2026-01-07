@@ -58,7 +58,18 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+MIDDLEWARE.insert(0, "erp.middleware.LicenseMiddleware")
+
+
 CORS_ALLOW_ALL_ORIGINS = True # dev only, we tighten this later
+
+CORS_ALLOW_CREDENTIALS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost",
+    "http://127.0.0.1",
+    "tauri://localhost",
+]
 
 ROOT_URLCONF = 'shan_enterprises.urls'
 
@@ -101,6 +112,14 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.sqlite3",
+#         "NAME": "C:/ProgramData/ShanERP/db.sqlite3",
+#     }
+# }
+
 
 
 # Password validation
