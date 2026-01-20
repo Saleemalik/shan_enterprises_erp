@@ -1,6 +1,6 @@
 import os
 from .models import Dealer, Place, Destination, RateRange, DestinationEntry, RangeEntry, DealerEntry, ServiceBill
-from .serializers import DealerSerializer, PlaceSerializer, DestinationSerializer, RateRangeSerializer, DestinationEntrySerializer, DestinationEntryWriteSerializer, DestinationEntryDetailSerializer, TransportDepotDealerEntrySerializer, ServiceBillSerializer
+from .serializers import DealerSerializer, PlaceSerializer, DestinationSerializer, RateRangeSerializer, DestinationEntrySerializer, DestinationEntryWriteSerializer, DestinationEntryDetailSerializer, TransportDepotDealerEntrySerializer, ServiceBillSerializer, PlaceListSerializer
 from django.db.models import Q
 from .base import AppBaseViewSet, BaseViewSet
 import pandas as pd
@@ -142,7 +142,7 @@ class PlaceViewSet(AppBaseViewSet):
     def list(self, request, *args, **kwargs):
         if request.query_params.get("all") == "1":
             queryset = self.filter_queryset(self.get_queryset())
-            serializer = self.get_serializer(queryset, many=True)
+            serializer = PlaceListSerializer(queryset, many=True)
             return Response({"results": serializer.data})
         return super().list(request, *args, **kwargs)
 

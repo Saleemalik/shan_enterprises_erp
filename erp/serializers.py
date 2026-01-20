@@ -11,6 +11,13 @@ class PlaceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Place
         fields = ['id', 'name', 'distance', 'district', 'destination', 'destination_name']
+        
+
+class PlaceListSerializer(serializers.ModelSerializer):
+    destination_name = serializers.CharField(source="destination.name", read_only=True)
+    class Meta:
+        model = Place
+        fields = ['id', 'name', 'destination_name']
 
 
 class DealerSerializer(serializers.ModelSerializer):
