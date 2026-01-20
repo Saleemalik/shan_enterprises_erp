@@ -14,10 +14,12 @@ import DestinationEntryEdit from "./pages/DestinationEntryEdit";
 import ServiceBillList from "./pages/service-bills/ServiceBills";
 import ServiceBillCreate from "./pages/service-bills/ServiceBillCreate";
 import ServiceBillEdit from "./pages/service-bills/ServiceBillEdit";
+import GlobalLoader from "./components/GlobalLoader";
 
 export default function App() {
   return (
     <Router>
+      <GlobalLoader />
       <Routes>
         <Route path="/" element={<Login />} />
       
@@ -48,6 +50,7 @@ export default function App() {
           </Route>
         </Route>
       </Routes>
+      
     </Router>
   );
 }

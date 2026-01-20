@@ -1,8 +1,17 @@
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import { Outlet } from "react-router-dom";
+import { useEffect } from "react";
+import { useLoading } from "../context/LoadingContext";
+import { injectLoader } from "../api/axiosConfig";
 
 export default function MainLayout() {
+  const { startLoading, stopLoading } = useLoading();
+
+  useEffect(() => {
+    injectLoader(startLoading, stopLoading);
+  }, [startLoading, stopLoading]);
+
   return (
     <div className="flex h-screen w-full">
       <Sidebar />

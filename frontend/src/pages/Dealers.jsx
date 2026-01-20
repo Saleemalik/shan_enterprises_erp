@@ -32,7 +32,7 @@ export default function Dealers() {
   const fetchDealers = async (page = 1, searchValue = "") => {
     try {
       const res = await axiosInstance.get(
-        `/dealers/?page=${page}&search=${searchValue}`
+        `/dealers/?page=${page}&search=${searchValue}`, 
       );
 
       setDealers(res.data.results);
@@ -50,7 +50,7 @@ export default function Dealers() {
   // -------------------------
   const fetchPlaces = async () => {
     try {
-      const res = await axiosInstance.get("/places/?all=1");
+      const res = await axiosInstance.get("/places/?all=1", {skipLoading: true});
       setAllPlaces(res.data.results);
     } catch (err) {
       console.error(err);
@@ -399,7 +399,7 @@ export default function Dealers() {
                 loadOptions={async (inputValue) => {
                   try {
                     const res = await axiosInstance.get(
-                      `/places/?search=${inputValue}`
+                      `/places/?search=${inputValue}`, {skipLoading: true}
                     );
                     return res.data.results.map((place) => ({
                       value: place.id,
