@@ -77,10 +77,6 @@ export default function Destination() {
         place: destination.place,
         description: destination.description,
         is_garage: destination.is_garage,
-        distance: destination.garage_details?.distance || "",
-        mobile: destination.garage_details?.mobile || "",
-        pincode: destination.garage_details?.pincode || "",
-        address: destination.garage_details?.address || "",
     });
     setEditId(destination.id);
     setShowModal(true);
