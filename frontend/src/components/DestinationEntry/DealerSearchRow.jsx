@@ -5,6 +5,7 @@ import { useState } from "react";
 export default function DealerSearchRow({ destinationId, onAdd }) {
   const [dealer, setDealer] = useState(null);
   const [mda, setMda] = useState("");
+  const [description, setDesc] = useState("");
   const [date, setDate] = useState("");
   const [bags, setBags] = useState("");
 
@@ -29,6 +30,7 @@ export default function DealerSearchRow({ destinationId, onAdd }) {
       mda,
       date,
       bags: Number(bags),
+      description,
     });
 
     setDealer(null);
@@ -53,6 +55,12 @@ export default function DealerSearchRow({ destinationId, onAdd }) {
 
       </div>
 
+      <input
+        className="border p-1 rounded"
+        placeholder="Description"
+        value={description}
+        onChange={(e) => setDesc(e.target.value)}
+      />
       <input
         className="border p-1 rounded"
         placeholder="MDA No"
