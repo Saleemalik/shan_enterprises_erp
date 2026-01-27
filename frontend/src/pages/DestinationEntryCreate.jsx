@@ -314,6 +314,42 @@ export default function DestinationEntryCreate() {
     });
   };
 
+  const sortAllDealersByMda = () => {
+    setForm((prev) => {
+      const nextRanges = prev.ranges.map((range) => {
+        if (!range.dealer_entries || range.dealer_entries.length <= 1) {
+          return range;
+        }
+
+        const sortedEntries = [...range.dealer_entries].sort((a, b) => {
+          const mdaA = (a.mda_number || "").trim();
+          const mdaB = (b.mda_number || "").trim();
+
+          // empty MDA always last
+          if (!mdaA && !mdaB) return 0;
+          if (!mdaA) return 1;
+          if (!mdaB) return -1;
+
+          return mdaA.localeCompare(mdaB, undefined, {
+            numeric: true,
+            sensitivity: "base",
+          });
+        });
+
+        return {
+          ...range,
+          dealer_entries: sortedEntries,
+        };
+      });
+
+      return {
+        ...prev,
+        ranges: nextRanges,
+      };
+    });
+  };
+
+
   return (
     <div className="">
       <div className="flex items-center justify-between mb-3">
@@ -395,13 +431,26 @@ export default function DestinationEntryCreate() {
           <div className="flex justify-between items-center mb-3">
             <h2 className="text-base font-semibold">Ranges</h2>
 
-            <button
-              onClick={addRange}
-              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
-            >
-              + Add Range
-            </button>
+            <div className="flex gap-2">
+              {/* SORT BY MDA */}
+              <button
+                onClick={sortAllDealersByMda}
+                title="Sort all dealers by MDA number"
+                className="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 rounded text-sm"
+              >
+                ⇅ MDA
+              </button>
+
+              {/* ADD RANGE */}
+              <button
+                onClick={addRange}
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
+              >
+                + Add Range
+              </button>
+            </div>
           </div>
+
 
           <div className="space-y-3">
             {form.ranges.map((range, ri) => (
