@@ -186,7 +186,8 @@ export default function DealerEntriesBlock({
                 <div className="col-span-1">Date</div>
                 <div className="col-span-1">Bags</div>
                 <div className="col-span-1">Desc</div>
-                <div className="col-span-3">Details</div>
+                <div className="col-span-1">KM</div>
+                <div className="col-span-2">Details</div>
             </div>
 
             {safeRows().map((row, di) => (
@@ -255,13 +256,19 @@ export default function DealerEntriesBlock({
                             handleFieldChange(di, "description", e.target.value)
                         }
                     />
+                    {/* KM */}
+                    <input
+                        className="col-span-1 border p-1 rounded text-xs"
+                        value={row.km || 0 }
+                        onChange={(e) =>
+                            handleFieldChange(di, "km", e.target.value)
+                        }
+                    />
 
                     {/* Details - SUPER COMPACT single/two line */}
-                    <div className="col-span-3 bg-gray-100 p-1 rounded leading-tight text-[14px]">
+                    <div className="col-span-2 bg-gray-100 p-1 rounded leading-tight text-[14px]">
                         <div className="flex items-center gap-1 justify-between flex-wrap">
                             <span>MT: {row.mt ?? 0}</span>
-
-                            <span className="flex items-center">KM: {row.km ?? 0}</span>
 
                             <span>MTK: {row.mtk ?? 0}</span>
 
