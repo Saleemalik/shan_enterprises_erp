@@ -82,6 +82,7 @@ export default function DestinationEntries() {
               <th className="p-2">Destination</th>
               <th className="p-2">Date</th>
               <th className="p-2">Ranges Used</th>
+              <th className="p-2">Products</th>
               <th className="p-2">Billed?</th>
               <th className="p-2">Actions</th>
             </tr>
@@ -121,6 +122,15 @@ export default function DestinationEntries() {
                   entry.rate_ranges.join(", ")
                 ) : (
                   <span className="text-gray-400">No ranges</span>
+                )}
+              </td>
+
+              {/* Products */}
+              <td className="p-2 text-sm">
+                {entry.products && entry.products.length > 0 ? (
+                  entry.products.join(", ")
+                ) : (
+                  <span className="text-gray-400">No products</span>
                 )}
               </td>
 

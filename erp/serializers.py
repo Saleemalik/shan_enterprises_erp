@@ -227,6 +227,7 @@ class DestinationEntrySerializer(serializers.ModelSerializer):
     rate_ranges = serializers.SerializerMethodField()
     service_bill = serializers.SerializerMethodField()
     destination = DestinatonSerializerReadOnly(read_only=True)
+    products = serializers.SerializerMethodField()
 
     class Meta:
         model = DestinationEntry
@@ -237,6 +238,7 @@ class DestinationEntrySerializer(serializers.ModelSerializer):
             "date",
             "to_address",
             "bill_number",
+            "products",
             "rate_ranges",
             "service_bill",
         ]
@@ -255,6 +257,14 @@ class DestinationEntrySerializer(serializers.ModelSerializer):
         if obj.service_bill:
             return {"bill_date": obj.service_bill.bill_date, "id": obj.service_bill.id}
         return None
+    
+    def get_products(self, obj):
+        products = set()
+        for de in obj.range_entries.prefetch_related("dealer_entries").all():
+            for entry in de.dealer_entries.all():
+                if entry.description:
+                    products.add(entry.description)
+        return list(products)
 
 class DestinationEntryWriteSerializer(serializers.ModelSerializer):
     range_entries = RangeEntryWriteSerializer(many=True)

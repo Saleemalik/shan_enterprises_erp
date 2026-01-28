@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axiosInstance from "../api/axiosConfig";
+import useDebounce from "../api/useDebounce";
 
 export default function Destination() {
   const [destinations, setDestinations] = useState([]);
@@ -7,6 +8,7 @@ export default function Destination() {
   const [selectedIds, setSelectedIds] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState(null);
+  const debouncedSearch = useDebounce(search, 3000);
 
   const [form, setForm] = useState({
     name: "",
@@ -86,6 +88,10 @@ export default function Destination() {
     fetchDestinations();
   }, []);
 
+  useEffect(() => {
+  fetchDestinations(1, debouncedSearch);
+}, [debouncedSearch]);
+
   return (
     <div className="p-4">
       {/* ---- Header ---- */}
@@ -120,10 +126,7 @@ export default function Destination() {
         type="text"
         placeholder="Search destination..."
         value={search}
-        onChange={(e) => {
-          setSearch(e.target.value);
-          fetchDestinations(1, e.target.value);
-        }}
+        onChange={(e) => setSearch(e.target.value)}
         className="border px-3 py-2 rounded w-full mb-4"
       />
 

@@ -1,6 +1,7 @@
 import AsyncSelect from "react-select/async";
 import axiosInstance from "../../api/axiosConfig";
-import { useState } from "react";
+import { use, useMemo, useState } from "react";
+import { debounce } from "../../api/useDebounce";
 
 export default function DealerSearchRow({ destinationId, onAdd }) {
   const [dealer, setDealer] = useState(null);
@@ -20,6 +21,10 @@ export default function DealerSearchRow({ destinationId, onAdd }) {
       ...d,
     }));
   };
+
+  const loadDealersDebounced = useMemo(() => {
+    return debounce(loadDealers, 1000);
+  }, []);
 
   const handleAdd = () => {
     if (!dealer) return alert("Select Dealer");
@@ -45,7 +50,7 @@ export default function DealerSearchRow({ destinationId, onAdd }) {
         <AsyncSelect
             cacheOptions
             defaultOptions
-            loadOptions={loadDealers}
+            loadOptions={loadDealersDebounced}
             value={dealer}
             onChange={setDealer}
             onInputChange={(val) => val}

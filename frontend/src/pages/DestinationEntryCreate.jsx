@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import AsyncSelect from "react-select/async";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../api/axiosConfig";
 import RangeBlock from "../components/DestinationEntry/RangeBlock";
 import useFormPersist from "../hooks/useFormPersist";
 import DealerSearchRow from "../components/DestinationEntry/DealerSearchRow";
+import {debounce} from "../api/useDebounce";
 
 
 /**
@@ -85,6 +86,10 @@ export default function DestinationEntryCreate() {
       return [];
     }
   };
+
+  const loadDestinationsDebounced = useMemo(() => {
+    return debounce(loadDestinations, 3000);
+  }, []);
 
   // add/remove ranges (top-level)
   const addRange = () => {
@@ -369,7 +374,7 @@ export default function DestinationEntryCreate() {
           <AsyncSelect
             cacheOptions
             defaultOptions
-            loadOptions={loadDestinations}
+            loadOptions={loadDestinationsDebounced}
             onChange={(opt) => updateTopField("destination", opt)}
             value={form.destination}
             placeholder="Search destination..."
