@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, use } from "react";
 import axiosInstance from "../api/axiosConfig";
 import AsyncSelect from "react-select/async";
+import { debounce } from "../api/useDebounce";
+import useDebounce from "../api/useDebounce";
 
 export default function Dealers() {
   const [dealers, setDealers] = useState([]);
@@ -44,6 +46,12 @@ export default function Dealers() {
       console.error(err);
     }
   };
+
+  const debouncedSearch = useDebounce(search, 1000);
+
+  useEffect(() => {
+    fetchDealers(1, debouncedSearch);
+  }, [debouncedSearch]);
 
   // -------------------------
   // Fetch ALL Places for Select mapping
@@ -158,6 +166,22 @@ export default function Dealers() {
     setShowModal(true);
   };
 
+  const loadPlaces = async (inputValue) => {
+        try {
+          const res = await axiosInstance.get(
+            `/places/?search=${inputValue}`, {skipLoading: true}
+          );
+          return res.data.results.map((place) => ({
+            value: place.id,
+            label: `${place.name} - ${place.destination_name}`,
+          }));
+        } catch {
+          return [];
+        }
+      };
+
+  const debounceLoadPlaces = useMemo(() => debounce(loadPlaces, 300), []);
+
   return (
     <div className="p-4">
       {/* Header */}
@@ -216,10 +240,7 @@ export default function Dealers() {
         type="text"
         placeholder="Search dealer..."
         value={search}
-        onChange={(e) => {
-          setSearch(e.target.value);
-          fetchDealers(1, e.target.value);
-        }}
+        onChange={(e) => setSearch(e.target.value)}
         className="border px-3 py-2 rounded w-full mb-4"
       />
 
@@ -396,19 +417,7 @@ export default function Dealers() {
                 isMulti
                 cacheOptions
                 defaultOptions
-                loadOptions={async (inputValue) => {
-                  try {
-                    const res = await axiosInstance.get(
-                      `/places/?search=${inputValue}`, {skipLoading: true}
-                    );
-                    return res.data.results.map((place) => ({
-                      value: place.id,
-                      label: `${place.name} - ${place.destination_name}`,
-                    }));
-                  } catch {
-                    return [];
-                  }
-                }}
+                loadOptions={debounceLoadPlaces}
                 value={form.place_ids?.map((id) => {
                   const place = allPlaces.find((p) => p.id === id);
                   return place

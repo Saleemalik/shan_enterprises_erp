@@ -126,6 +126,7 @@ class RangeEntry(UppercaseMixin, models.Model):
     total_mtk = models.FloatField(null=True, blank=True)
     total_amount = models.FloatField(null=True, blank=True)
     is_transport_fol_slab = models.BooleanField(default=False)
+    print_page_no = models.IntegerField(null=True, blank=True)
     fol_slab = models.ForeignKey(
         'TransportFOLSlab',
         on_delete=models.SET_NULL,
