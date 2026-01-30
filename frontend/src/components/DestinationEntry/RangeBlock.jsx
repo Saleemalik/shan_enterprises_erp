@@ -60,9 +60,30 @@ export default function RangeBlock({
             </div>
           ) : (
             // ---------- READ-ONLY DISPLAY ----------
-            <div className="border rounded-lg p-1 bg-gray-50">
-              <div className="grid grid-cols-3 gap-2 text-center">
-                {/* Range */}
+            <div className="border rounded-lg p-2 bg-gray-50">
+              <div className="grid grid-cols-4 gap-3 items-center text-center">
+
+                {/* PRINT PAGE NO */}
+                <div className="text-left">
+                  <div className="text-xs text-gray-600">Page</div>
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="Auto"
+                    className="border rounded px-2 py-1 text-sm w-20"
+                    value={range.print_page_no ?? ""}
+                    onChange={(e) =>
+                      onUpdateRange({
+                        ...range,
+                        print_page_no: e.target.value
+                          ? Number(e.target.value)
+                          : null,
+                      })
+                    }
+                  />
+                </div>
+
+                {/* RANGE */}
                 <div>
                   <div className="text-sm text-gray-600">Range</div>
                   <div className="font-semibold">
@@ -70,7 +91,7 @@ export default function RangeBlock({
                   </div>
                 </div>
 
-                {/* Mode */}
+                {/* MODE */}
                 <div>
                   <div className="text-sm text-gray-600">Mode</div>
                   <div className="font-semibold">
@@ -78,15 +99,17 @@ export default function RangeBlock({
                   </div>
                 </div>
 
-                {/* Rate */}
+                {/* RATE */}
                 <div>
                   <div className="text-sm text-gray-600">Rate</div>
                   <div className="font-semibold">
                     ₹{Number(range.rate).toFixed(2)}
                   </div>
                 </div>
+
               </div>
             </div>
+
           )}
         </div>
 

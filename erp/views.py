@@ -22,7 +22,9 @@ from reportlab.platypus import KeepTogether
 from io import BytesIO
 from num2words import num2words
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
-from reportlab.platypus import Flowable, Paragraph, KeepTogether
+from reportlab.platypus import Flowable, Paragraph, KeepTogether, PageBreak
+from reportlab.pdfgen import canvas
+
 from collections import defaultdict
 from .utils import fmt_km
 from .service_bill import generate_service_bill_pdf
@@ -41,6 +43,20 @@ def safe_float(val):
         return float(val)
     except:
         return 0
+
+class PageTrackingCanvas(canvas.Canvas):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._page_number = 1
+
+    def showPage(self):
+        self._page_number += 1
+        super().showPage()
+
+    @property
+    def page_number(self):
+        return self._page_number
+
 class BreakableRangeBlock(Flowable):
 
     def __init__(self, title, title_cont, table, style, is_continuation=False):
@@ -119,6 +135,11 @@ class BreakableRangeBlock(Flowable):
 
     def draw(self):
         # Select proper heading
+        if hasattr(self.canv, "page_number") and hasattr(self, "range_entry"):
+            if self.range_entry.print_page_no is None:
+                self.range_entry.print_page_no = self.canv.page_number
+                self.range_entry.save(update_fields=["print_page_no"])
+
         if self.is_continuation:
             p = Paragraph(self.title_cont, self.style)
             title_h = self.cont_h
@@ -497,7 +518,9 @@ class DestinationEntryViewSet(BaseViewSet):
         
         def clean_km(v):
             return int(v) if float(v).is_integer() else v
-
+        
+        current_expected_page = 1
+        
         for range_entry in ranges:
             rr = RateRange.objects.get(id=range_entry.rate_range_id)
             
@@ -560,6 +583,11 @@ class DestinationEntryViewSet(BaseViewSet):
                 ('LEFTPADDING', (0,0), (-1,-1), 3),
                 ('RIGHTPADDING', (0,0), (-1,-1), 3),
             ]))
+            
+            if range_entry.print_page_no:
+                while current_expected_page < range_entry.print_page_no:
+                    elements.append(PageBreak())
+                    current_expected_page += 1
 
             block = BreakableRangeBlock(
                 title=range_title,
@@ -567,9 +595,14 @@ class DestinationEntryViewSet(BaseViewSet):
                 table=table,
                 style=styles['CenterBold']
             )
+            block.range_entry = range_entry
 
             elements.append(block)
             elements.append(Spacer(1, 12))
+            
+            if range_entry.print_page_no is None:
+                range_entry.print_page_no = current_expected_page
+                range_entry.save(update_fields=["print_page_no"])
 
 
         elements.append(Spacer(1, 20))
@@ -599,7 +632,13 @@ class DestinationEntryViewSet(BaseViewSet):
 
             canvas.restoreState()
 
-        doc.build(elements, onFirstPage=draw_header_footer, onLaterPages=draw_header_footer)
+        doc.build(
+            elements,
+            onFirstPage=draw_header_footer,
+            onLaterPages=draw_header_footer,
+            canvasmaker=PageTrackingCanvas
+        )
+
 
         buffer.seek(0)
         return buffer

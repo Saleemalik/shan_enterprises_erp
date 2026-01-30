@@ -211,6 +211,7 @@ class RangeEntryWriteSerializer(serializers.ModelSerializer):
         fields = [
             "rate_range",
             "rate",
+            "print_page_no",
             "total_bags",
             "total_mt",
             "total_mtk",
@@ -353,6 +354,7 @@ class RangeEntrySerializer(serializers.ModelSerializer):
             "total_mtk",
             "total_amount",
             "dealer_entries",
+            "print_page_no",
         ]
 
     def get_rate_range_display(self, obj):

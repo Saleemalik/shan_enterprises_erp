@@ -68,6 +68,7 @@ export default function DestinationEntryEdit() {
             to_km: Number(r.rate_range_display?.split("-")[1]),
           },
           rate: Number(r.rate),
+          print_page_no: r.print_page_no ?? null,
           dealer_entries: r.dealer_entries.map(d => ({
             id: d.id,
             dealer: {
@@ -213,6 +214,7 @@ export default function DestinationEntryEdit() {
           return {
             rate_range: r.rate_range?.value ?? null,
             rate: Number(r.rate || 0),
+            print_page_no: r.print_page_no ?? null,
             total_bags: dealer_entries.reduce(
               (s, x) => s + Number(x.no_bags || 0),
               0
