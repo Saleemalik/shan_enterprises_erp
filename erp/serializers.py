@@ -191,7 +191,7 @@ class DealerEntrySerializer(serializers.ModelSerializer):
             "id",
             "dealer", "despatched_to", "km",
             "no_bags", "rate", "mt", "mtk", "amount",
-            "mda_number", "date", "description", "remarks"
+            "mda_number", "date", "description", "remarks", "bill_doc",
         ]
         read_only_fields = ["id"]
 
@@ -335,6 +335,7 @@ class DealerEntrySerializer(serializers.ModelSerializer):
             "date",
             "description",
             "remarks",
+            "bill_doc",
         ]
 
 

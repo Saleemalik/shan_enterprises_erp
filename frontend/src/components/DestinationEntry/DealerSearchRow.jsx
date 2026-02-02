@@ -9,6 +9,7 @@ export default function DealerSearchRow({ destinationId, onAdd }) {
   const [description, setDesc] = useState("");
   const [date, setDate] = useState("");
   const [bags, setBags] = useState("");
+  const [bill_doc, setBillDoc] = useState("");
 
   const loadDealers = async (input) => {
     if (!destinationId) return [];
@@ -36,17 +37,19 @@ export default function DealerSearchRow({ destinationId, onAdd }) {
       date,
       bags: Number(bags),
       description,
+      bill_doc,
     });
 
     setDealer(null);
     setMda(Number(mda)+1); // increment mda for next entry;
+    setBillDoc(Number(bill_doc)+1); // increment bill doc for next entry;
   };
 
   return (
-    <div className="grid grid-cols-7 gap-2 items-center mb-3">
+    <div className="grid grid-cols-10 gap-2 items-center mb-3">
       <label className="text-sm col-span-1">Search Dealer</label>
 
-      <div className="col-span-2">
+      <div className="col-span-3">
         <AsyncSelect
             cacheOptions
             defaultOptions
@@ -65,6 +68,12 @@ export default function DealerSearchRow({ destinationId, onAdd }) {
         placeholder="Description"
         value={description}
         onChange={(e) => setDesc(e.target.value)}
+      />
+      <input
+        className="border p-1 rounded"
+        placeholder="Bill Doc"
+        value={bill_doc}
+        onChange={(e) => setBillDoc(e.target.value)}
       />
       <input
         className="border p-1 rounded"

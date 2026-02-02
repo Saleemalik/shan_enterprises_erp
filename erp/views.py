@@ -479,6 +479,20 @@ class DestinationEntryViewSet(BaseViewSet):
         styles.add(ParagraphStyle(name='TitleBold', fontSize=13, leading=14, fontName='Helvetica-Bold', alignment=TA_LEFT))
         styles.add(ParagraphStyle(name='CustomNormal', fontSize=10, leading=12))
         styles.add(ParagraphStyle(name='CenterBold', fontSize=10, fontName='Helvetica-Bold', alignment=TA_CENTER))
+        styles.add(ParagraphStyle(
+            name='SmallHeader',
+            fontSize=8,
+            leading=9,
+            fontName='Helvetica-Bold',
+            alignment=TA_CENTER
+        ))
+
+        styles.add(ParagraphStyle(
+            name='Tiny',
+            fontSize=7.5,
+            leading=9
+        ))
+
 
         elements = []
 
@@ -536,7 +550,8 @@ class DestinationEntryViewSet(BaseViewSet):
 
             table_data = [[
                 "SL NO", "Date", "MDA NO", "Description", "Despatched to",
-                "Bag", "MT", "KM", "MTK", "Rate", "Amount", "Remarks"
+                "Bag", "MT", "KM", "MTK", "Rate", "Amount", Paragraph("Remarks / Bill.Doc.", styles['SmallHeader'])
+
             ]]
 
             for i, d in enumerate(dealer_entries, start=1):
@@ -552,7 +567,7 @@ class DestinationEntryViewSet(BaseViewSet):
                     f"{d.mtk:.2f}",
                     f"{range_entry.rate:.2f}",
                     f"{d.amount:.2f}",
-                    Paragraph(d.remarks or "", styles['CustomNormal'])
+                    Paragraph(f"{d.remarks or ''} {d.bill_doc or ''}", styles['Tiny'])
                 ])
 
             # Total Row
@@ -575,13 +590,19 @@ class DestinationEntryViewSet(BaseViewSet):
 
             table = Table(table_data, colWidths=col_widths, repeatRows=1)
             table.setStyle(TableStyle([
-                ('GRID', (0,0), (-1,-1), 0.7, colors.black),               
+                ('GRID', (0,0), (-1,-1), 0.7, colors.black),
                 ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-                ('FONT', (0,0), (-1,0), 'Helvetica-Bold'),               
+                ('FONT', (0,0), (-1,0), 'Helvetica-Bold'),
                 ('FONT', (0,-1), (-1,-1), 'Helvetica-Bold'),
                 ('VALIGN', (0,0), (-1,-1), 'TOP'),
+
+                # Global padding
                 ('LEFTPADDING', (0,0), (-1,-1), 3),
                 ('RIGHTPADDING', (0,0), (-1,-1), 3),
+
+                # 🔽 Reduce padding only for Remarks column (last column)
+                ('LEFTPADDING', (-1,0), (-1,-1), 2),
+                ('RIGHTPADDING', (-1,0), (-1,-1), 2),
             ]))
             
             if range_entry.print_page_no:

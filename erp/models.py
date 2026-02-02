@@ -175,6 +175,7 @@ class DealerEntry(UppercaseMixin, models.Model):
     amount = models.FloatField()
 
     mda_number = models.CharField(max_length=255)
+    bill_doc = models.CharField(max_length=255, null=True, blank=True)
     date = models.CharField(max_length=255)
     description = models.CharField(max_length=255, default="FACTOM FOS")
     remarks = models.TextField(null=True, blank=True)

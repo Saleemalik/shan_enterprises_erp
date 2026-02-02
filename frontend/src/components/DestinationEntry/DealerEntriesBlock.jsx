@@ -38,6 +38,7 @@ export default function DealerEntriesBlock({
                     no_bags: "",
                     description: "FACTOM FOS",
                     km: "",
+                    bill_doc: "",
                     mt: 0,
                     mtk: 0,
                     amount: 0,
@@ -181,12 +182,13 @@ export default function DealerEntriesBlock({
 
             <div className="grid grid-cols-12 gap-2 text-sm font-semibold border-b pb-2 mb-2">
                 <div className="col-span-2">Dealer</div>
-                <div className="col-span-3">Despatched To</div>
+                <div className="col-span-2">Despatched To</div>
                 <div className="col-span-1">MDA</div>
                 <div className="col-span-1">Date</div>
                 <div className="col-span-1">Bags</div>
                 <div className="col-span-1">Desc</div>
                 <div className="col-span-1">KM</div>
+                <div className="col-span-1">Bill Doc</div>
                 <div className="col-span-2">Details</div>
             </div>
 
@@ -215,13 +217,13 @@ export default function DealerEntriesBlock({
 
                     {/* Despatched To */}
                     <input
-                        className="col-span-3 border p-1 rounded text-sm"
+                        className="col-span-2 border p-1 rounded text-sm"
                         value={row.despatched_to || ""}
                         onChange={(e) =>
                             handleFieldChange(di, "despatched_to", e.target.value)
                         }
                     />
-
+                    
                     {/* MDA */}
                     <input
                         className="col-span-1 border p-1 rounded text-sm"
@@ -264,6 +266,16 @@ export default function DealerEntriesBlock({
                             handleFieldChange(di, "km", e.target.value)
                         }
                     />
+
+                    {/* Bill Doc */}
+                    <input
+                        className="col-span-1 border p-1 rounded text-sm"
+                        value={row.bill_doc || ""}
+                        onChange={(e) =>
+                            handleFieldChange(di, "bill_doc", e.target.value)
+                        }
+                    />
+
 
                     {/* Details - SUPER COMPACT single/two line */}
                     <div className="col-span-2 bg-gray-100 p-1 rounded leading-tight text-[14px]">
