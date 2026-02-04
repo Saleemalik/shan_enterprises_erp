@@ -1,6 +1,9 @@
 // src/pages/Places.jsx
 import { useEffect, useState } from "react";
 import axiosInstance from "../api/axiosConfig";
+import AsyncSelect from 'react-select/async';
+import {debounce} from "../api/useDebounce";
+import { useMemo } from "react";
 
 export default function Places() {
   const [places, setPlaces] = useState([]);
@@ -23,11 +26,20 @@ export default function Places() {
   const [lastPage, setLastPage] = useState(1);
 
   // ✅ Fetch Destinations for Select Dropdown
-  const fetchDestinations = async () => {
-    const res = await axiosInstance.get("destinations/?page_size=1000");
-    setDestinations(res.data.results ?? res.data);
+  const loadDestinations = async (inputValue) => {
+    const res = await axiosInstance.get(
+      `destinations/?search=${inputValue}&page_size=20`
+    );
+
+    const data = res.data.results ?? res.data;
+
+    return data.map((d) => ({
+      label: d.name,
+      value: d.id,
+    }));
   };
 
+  
   // ✅ Fetch Places list (pagination + search)
   const fetchPlaces = async () => {
     const res = await axiosInstance.get(`places/?page=${page}&search=${search}`);
@@ -40,7 +52,7 @@ export default function Places() {
   }, [page, search]);
 
   useEffect(() => {
-    fetchDestinations(); // ✅ load dropdown data once
+    loadDestinations(); // ✅ load dropdown data once
   }, []);
 
   // ✅ Reset Modal form
@@ -273,18 +285,24 @@ export default function Places() {
 
               {/* Destination Dropdown */}
               <label className="block mb-2">Destination</label>
-              <select
-                className="w-full border p-2 rounded mb-4"
-                value={destination}
-                onChange={(e) => setDestination(e.target.value)}
-              >
-                <option value="">-- Select Destination --</option>
-                {destinations.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
+             <AsyncSelect
+              cacheOptions
+              defaultOptions
+              loadOptions={loadDestinations}
+              value={
+                destination
+                  ? destinations
+                      .map(d => ({ label: d.name, value: d.id }))
+                      .find(opt => opt.value === destination)
+                  : null
+              }
+              onChange={(option) => setDestination(option ? option.value : "")}
+              placeholder="Search destination..."
+              styles={{
+                control: (base) => ({ ...base, minHeight: "38px" }),
+                menu: (base) => ({ ...base, fontSize: "14px" }),
+              }}
+            />
 
               {/* District */}
               <label className="block mb-2">District</label>
