@@ -384,6 +384,10 @@ class TransportDepotDealerEntrySerializer(serializers.ModelSerializer):
         source="range_entry.destination_entry.destination.name",
         read_only=True
     )
+    product = serializers.CharField(
+        source="description",
+        read_only=True
+    ) 
     destination_entry_id = serializers.IntegerField(
         source="range_entry.destination_entry.id",
         read_only=True
@@ -421,6 +425,7 @@ class TransportDepotDealerEntrySerializer(serializers.ModelSerializer):
             "rate",          # Rate
             "amount",        # Amount
             "number",        # No.
+            "product",      # Products
         ]
 
 

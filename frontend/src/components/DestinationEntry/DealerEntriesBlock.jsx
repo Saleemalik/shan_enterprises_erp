@@ -194,26 +194,35 @@ export default function DealerEntriesBlock({
 
             {safeRows().map((row, di) => (
                 <div key={di} className="grid grid-cols-12 gap-1 items-center">
-                    {/* Dealer */}
-                    <AsyncSelect
-                        className="col-span-2"
-                        cacheOptions
-                        defaultOptions
-                        loadOptions={loadDealers}
-                        getOptionValue={(o) => o.value}
-                        getOptionLabel={(o) => o.label}
-                        value={getSelectValue(row)}
-                        onChange={(opt) => handleDealerSelect(di, opt)}
-                        isClearable
-                        styles={{
-                            control: (base) => ({
-                                ...base,
-                                minHeight: "30px",
-                                fontSize: "13px",
-                            }),
-                            menu: (base) => ({ ...base, fontSize: "13px" }),
-                        }}
-                    />
+                    {/* Dealer + Row Number */}
+                    <div className="col-span-2 flex items-center gap-1">
+                        {/* Number */}
+                        <div className="w-6 text-center text-sm font-medium text-gray-700">
+                            {di + 1}
+                        </div>
+
+                        {/* Dealer */}
+                        <AsyncSelect
+                            className="flex-1"
+                            cacheOptions
+                            defaultOptions
+                            loadOptions={loadDealers}
+                            getOptionValue={(o) => o.value}
+                            getOptionLabel={(o) => o.label}
+                            value={getSelectValue(row)}
+                            onChange={(opt) => handleDealerSelect(di, opt)}
+                            isClearable
+                            styles={{
+                                control: (base) => ({
+                                    ...base,
+                                    minHeight: "30px",
+                                    fontSize: "13px",
+                                }),
+                                menu: (base) => ({ ...base, fontSize: "13px" }),
+                            }}
+                        />
+                    </div>
+
 
                     {/* Despatched To */}
                     <input

@@ -419,6 +419,8 @@ class DestinationViewSet(AppBaseViewSet):
     
 
 class DestinationEntryViewSet(BaseViewSet):
+    search_fields = ["id", "bill_number", "destination__name", "transport_type"]
+    ordering_fields = ["id", "date", "bill_number"]
     queryset = DestinationEntry.objects.all().order_by("-id")
 
     def get_serializer_class(self):
@@ -879,3 +881,6 @@ class ServiceBillViewSet(BaseViewSet):
             filename=f"service-bill-{pk}.pdf",
             content_type="application/pdf",
         )
+        
+    def get_queryset(self):
+        return super().get_queryset()
