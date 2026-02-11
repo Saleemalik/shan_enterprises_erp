@@ -29,6 +29,7 @@ from collections import defaultdict
 from .utils import fmt_km
 from .service_bill import generate_service_bill_pdf
 from django.http import HttpResponse
+from datetime import datetime
 
 
 
@@ -459,7 +460,7 @@ class DestinationEntryViewSet(BaseViewSet):
         entry = DestinationEntry.objects.select_related("destination").get(id=entry_id)
         destination = entry.destination
         bill_number = entry.bill_number
-        date = entry.date
+        date = datetime.strptime(entry.date, "%Y-%m-%d").strftime("%d-%m-%Y")
         letter_note = entry.letter_note
         to_address = entry.to_address
 
@@ -559,7 +560,7 @@ class DestinationEntryViewSet(BaseViewSet):
             for i, d in enumerate(dealer_entries, start=1):
                 table_data.append([
                     str(i),
-                    str(d.date),
+                    str(datetime.strptime(d.date, "%Y-%m-%d").strftime("%d-%m-%Y")),
                     d.mda_number,
                     trim(d.description),
                     trim(d.despatched_to),

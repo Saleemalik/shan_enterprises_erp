@@ -215,6 +215,42 @@ export default function DestinationEntryCreate() {
   const calcMt = (bags) => Number((Number(bags || 0) * 0.05).toFixed(3));
   const calcMtk = (mt, km) => Number((Number(mt || 0) * Number(km || 0)).toFixed(3));
 
+  const sortAllDealersByMda = () => {
+    setForm((prev) => {
+      const nextRanges = prev.ranges.map((range) => {
+        if (!range.dealer_entries || range.dealer_entries.length <= 1) {
+          return range;
+        }
+
+        const sortedEntries = [...range.dealer_entries].sort((a, b) => {
+          const mdaA = (a.mda_number || "").trim();
+          const mdaB = (b.mda_number || "").trim();
+
+          // empty MDA always last
+          if (!mdaA && !mdaB) return 0;
+          if (!mdaA) return 1;
+          if (!mdaB) return -1;
+
+          return mdaA.localeCompare(mdaB, undefined, {
+            numeric: true,
+            sensitivity: "base",
+          });
+        });
+
+        return {
+          ...range,
+          dealer_entries: sortedEntries,
+        };
+      });
+
+      return {
+        ...prev,
+        ranges: nextRanges,
+      };
+    });
+  };
+
+
   const addDealer = (entry) => {
     // entry = { dealer, mda, date, bags }
     // entry.dealer is the AsyncSelect option produced by loadDealers:
@@ -319,43 +355,11 @@ export default function DestinationEntryCreate() {
 
       return { ...prev, ranges: nextRanges };
     });
+
+    sortAllDealersByMda()
   };
 
-  const sortAllDealersByMda = () => {
-    setForm((prev) => {
-      const nextRanges = prev.ranges.map((range) => {
-        if (!range.dealer_entries || range.dealer_entries.length <= 1) {
-          return range;
-        }
-
-        const sortedEntries = [...range.dealer_entries].sort((a, b) => {
-          const mdaA = (a.mda_number || "").trim();
-          const mdaB = (b.mda_number || "").trim();
-
-          // empty MDA always last
-          if (!mdaA && !mdaB) return 0;
-          if (!mdaA) return 1;
-          if (!mdaB) return -1;
-
-          return mdaA.localeCompare(mdaB, undefined, {
-            numeric: true,
-            sensitivity: "base",
-          });
-        });
-
-        return {
-          ...range,
-          dealer_entries: sortedEntries,
-        };
-      });
-
-      return {
-        ...prev,
-        ranges: nextRanges,
-      };
-    });
-  };
-
+  
 
   return (
     <div className="">

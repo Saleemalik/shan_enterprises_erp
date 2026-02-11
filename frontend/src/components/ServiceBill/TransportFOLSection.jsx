@@ -262,7 +262,7 @@ export default function TransportFOLSection({
                       />
                     </td>
                     <td className="border p-2">
-                      {r.destination?.name}
+                      {r.destination?.name}({r.products?.join(", ")})
                     </td>
                     <td className="border p-2">
                       {r.date}
@@ -338,7 +338,7 @@ export default function TransportFOLSection({
                   {row.destinations.map((d, i) => (
                     <tr key={i}>
                       <td className="border p-1">
-                        {d.destination_place}
+                        {d.destination_place}({d.products?.join(", ")})
                       </td>
                       <td className="border p-1 text-right">
                         {d.qty_mt}

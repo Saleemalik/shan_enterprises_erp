@@ -21,6 +21,7 @@ from reportlab.platypus.flowables import HRFlowable
 from erp.models import DealerEntry
 from django.db.models import Q
 from collections import defaultdict
+from datetime import datetime
 
 
 styles = getSampleStyleSheet()
@@ -107,7 +108,7 @@ def build_handling_section(story, bill: ServiceBill):
     header_tbl = Table(
         [[
             Paragraph(f"<b>BILL NO :</b> {handling.bill_number}", NORMAL),
-            Paragraph(f"<b>Date :</b> {bill.bill_date} &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;  ", RIGHT),
+            Paragraph(f"<b>Date :</b> {bill.bill_date.strftime('%d-%m-%Y')} &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;  ", RIGHT),
         ]],
         colWidths=[275, 260],
     )
@@ -160,7 +161,7 @@ def build_handling_section(story, bill: ServiceBill):
     clearing_box = Table(
         [
             [Paragraph("<b>Date of Clearing</b>", NORMAL)],
-            [Paragraph(bill.date_of_clearing or "", NORMAL)],
+            [Paragraph(datetime.strptime(bill.date_of_clearing, '%Y-%m-%d').strftime('%d-%m-%Y') or "", NORMAL)],
         ],
         colWidths=[130],
         rowHeights=[22, 22],
@@ -337,7 +338,7 @@ def build_depot_section(story, bill: ServiceBill):
     header_tbl = Table(
         [[
             Paragraph(f"<b>BILL NO :</b> {depot.bill_number}", NORMAL),
-            Paragraph(f"<b>Date :</b> {bill.bill_date}", RIGHT),
+            Paragraph(f"<b>Date :</b> {bill.bill_date.strftime('%d-%m-%Y')}", RIGHT),
         ]],
         colWidths=[275, 260],
     )
@@ -359,7 +360,7 @@ def build_depot_section(story, bill: ServiceBill):
     clearing_box = Table(
         [
             [Paragraph("<b>Date of Clearing</b>", NORMAL)],
-            [Paragraph(bill.date_of_clearing or "", NORMAL)],
+            [Paragraph(datetime.strptime(bill.date_of_clearing, '%Y-%m-%d').strftime('%d-%m-%Y') or "", NORMAL)],
         ],
         colWidths=[140],
         rowHeights=[22, 22],
@@ -546,7 +547,7 @@ def build_fol_section(story, bill: ServiceBill):
     header_tbl = Table(
         [[
             Paragraph(f"<b>BILL NO :</b> {fol.bill_number}", NORMAL),
-            Paragraph(f"<b>Date :</b> {bill.bill_date}", RIGHT),
+            Paragraph(f"<b>Date :</b> {bill.bill_date.strftime('%d-%m-%Y')}", RIGHT),
         ]],
         colWidths=[275, 260],
     )
@@ -568,7 +569,7 @@ def build_fol_section(story, bill: ServiceBill):
     clearing_box = Table(
         [
             [Paragraph("<b>Date of Clearing</b>", NORMAL)],
-            [Paragraph(bill.date_of_clearing or "", NORMAL)],
+            [Paragraph(datetime.strptime(bill.date_of_clearing, '%Y-%m-%d').strftime('%d-%m-%Y') or "", NORMAL)],
         ],
         colWidths=[140],
         rowHeights=[22, 22],
