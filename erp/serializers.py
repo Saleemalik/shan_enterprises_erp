@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Dealer, Place, Destination, RateRange, DealerEntry, RangeEntry, DestinationEntry, HandlingBillSection, TransportDepotSection, TransportFOLSection, ServiceBill, TransportFOLDestination, TransportFOLSlab
+from .models import Dealer, Place, Destination, RateRange, DealerEntry, RangeEntry, DestinationEntry, HandlingBillSection, TransportDepotSection, TransportFOLSection, ServiceBill, TransportFOLDestination, TransportFOLSlab, TransportItem
 from .utils import generate_dealer_code
 from django.db import transaction
 from django.db.models import Q
@@ -202,6 +202,11 @@ class RangeEntrySerializer(serializers.ModelSerializer):
             "id", "destination_entry", "rate_range",
             "rate", "total_bags", "total_mt", "total_mtk", "total_amount"
         ]
+        
+class TransportItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TransportItem
+        fields = ['id', 'name', 'description']
 
 class RangeEntryWriteSerializer(serializers.ModelSerializer):
     dealer_entries = DealerEntrySerializer(many=True)

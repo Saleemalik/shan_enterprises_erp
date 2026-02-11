@@ -48,6 +48,13 @@ class Place(UppercaseMixin, models.Model):
     def __str__(self):
         return f"{self.name} ({self.distance} km)"
 
+class TransportItem(UppercaseMixin, models.Model):
+    name = models.CharField(max_length=255)
+    description = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
 
 class Dealer(UppercaseMixin, models.Model):
     code = models.CharField(max_length=255, unique=True)

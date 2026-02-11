@@ -1,6 +1,6 @@
 import os
-from .models import Dealer, Place, Destination, RateRange, DestinationEntry, RangeEntry, DealerEntry, ServiceBill
-from .serializers import DealerSerializer, PlaceSerializer, DestinationSerializer, RateRangeSerializer, DestinationEntrySerializer, DestinationEntryWriteSerializer, DestinationEntryDetailSerializer, TransportDepotDealerEntrySerializer, ServiceBillSerializer, PlaceListSerializer
+from .models import Dealer, Place, Destination, RateRange, DestinationEntry, RangeEntry, DealerEntry, ServiceBill, TransportItem
+from .serializers import DealerSerializer, PlaceSerializer, DestinationSerializer, RateRangeSerializer, DestinationEntrySerializer, DestinationEntryWriteSerializer, DestinationEntryDetailSerializer, TransportDepotDealerEntrySerializer, ServiceBillSerializer, PlaceListSerializer, TransportItemSerializer
 from django.db.models import Q
 from .base import AppBaseViewSet, BaseViewSet
 import pandas as pd
@@ -412,6 +412,13 @@ class RateRangeViewSet(AppBaseViewSet):
     search_fields = ['from_km', 'to_km']        
     ordering_fields = ['from_km', 'to_km']
 
+
+class TransportItemViewSet(AppBaseViewSet):
+    queryset = TransportItem.objects.all().order_by("name")
+    serializer_class = TransportItemSerializer
+    search_fields = ['name', 'description']        
+    ordering_fields = ['name']
+    
 class DestinationViewSet(AppBaseViewSet):
     queryset = Destination.objects.all().order_by("name")
     serializer_class = DestinationSerializer
