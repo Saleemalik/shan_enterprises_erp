@@ -163,6 +163,8 @@ export default function ServiceBillCreate() {
       console.log("SERVICE BILL PAYLOAD", payload);
 
       const res = await axiosInstance.post("/service-bills/", payload);
+      
+      navigate(`/app/service-bills/${res.data.id}`, { state: { success: true, message: "Service Bill created successfully!" } });
 
       // localStorage.removeItem(STORAGE_KEY);
       // navigate(`/app/service-bills/${res.data.id}`);
