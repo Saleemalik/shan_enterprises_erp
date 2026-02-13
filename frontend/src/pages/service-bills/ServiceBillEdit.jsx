@@ -1,11 +1,13 @@
 // ServiceBillEdit.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axiosInstance from "../../api/axiosConfig";
 
 import HandlingSection from "../../components/ServiceBill/HandlingSection";
 import TransportDepotSection from "../../components/ServiceBill/TransportDepotSection";
 import TransportFOLSection from "../../components/ServiceBill/TransportFOLSection";
+import { debounce } from "../../api/useDebounce";
+import AsyncSelect from "react-select/async";
 
 export default function ServiceBillEdit() {
   const { id } = useParams();
@@ -84,6 +86,27 @@ export default function ServiceBillEdit() {
       }));
     }
   };
+
+
+  // ✅ Transport Items
+  const loadTransportItems = async (input) => {
+    const res = await axiosInstance.get(
+      `/transport-items/?search=${input}&page_size=20`
+    );
+
+    const data = res.data.results ?? res.data;
+
+    return data.map((i) => ({
+      value: i.id,
+      label: i.name,
+      ...i,
+    }));
+  };
+
+  const loadItemsDebounced = useMemo(
+    () => debounce(loadTransportItems, 800),
+    []
+  );
 
   /* -------------------------------
    * SUBMIT UPDATE (NORMALIZED)
@@ -255,14 +278,19 @@ export default function ServiceBillEdit() {
           <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block mb-1 font-medium">Product</label>
-              <input
-                className={input}
-                value={form.product}
-                onChange={(e) =>
-                  updateField(null, "product", e.target.value)
+              <AsyncSelect
+                cacheOptions
+                defaultOptions
+                loadOptions={loadItemsDebounced}
+                value={form.product ? { value: form.product, label: form.product } : null}
+                onChange={(opt) =>
+                  updateField(null, "product", opt ? opt.label : "")
                 }
+                placeholder="Select or type product..."
+                isClearable
               />
             </div>
+
 
             <div>
               <label className="block mb-1 font-medium">HSN / SAC</label>
