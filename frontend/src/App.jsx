@@ -14,6 +14,7 @@ import DestinationEntryEdit from "./pages/DestinationEntryEdit";
 import ServiceBillList from "./pages/service-bills/ServiceBills";
 import ServiceBillCreate from "./pages/service-bills/ServiceBillCreate";
 import ServiceBillEdit from "./pages/service-bills/ServiceBillEdit";
+import TransportItems from "./pages/TransportItems";
 import GlobalLoader from "./components/GlobalLoader";
 
 export default function App() {
@@ -33,6 +34,7 @@ export default function App() {
           }
         >
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="transport-items" element={<TransportItems />} />
           <Route path="destinations" element={<Destinations />} />
           <Route path="places" element={<Places />} />
           <Route path="rate-ranges" element={<RateRanges />} />

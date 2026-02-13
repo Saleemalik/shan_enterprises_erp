@@ -1,15 +1,15 @@
 import AsyncSelect from "react-select/async";
 import axiosInstance from "../../api/axiosConfig";
-import { use, useMemo, useState } from "react";
+import { use, useMemo, useState, useEffect } from "react";
 import { debounce } from "../../api/useDebounce";
 
 export default function DealerSearchRow({ destinationId, onAdd }) {
   const [dealer, setDealer] = useState(null);
   const [mda, setMda] = useState("");
-  const [description, setDesc] = useState("");
   const [date, setDate] = useState("");
   const [bags, setBags] = useState("");
   const [bill_doc, setBillDoc] = useState("");
+  const [transportItem, setTransportItem] = useState(null);
 
   const loadDealers = async (input) => {
     if (!destinationId) return [];
@@ -27,6 +27,27 @@ export default function DealerSearchRow({ destinationId, onAdd }) {
     return debounce(loadDealers, 1000);
   }, []);
 
+  // ✅ Transport Items
+  const loadTransportItems = async (input) => {
+    const res = await axiosInstance.get(
+      `/transport-items/?search=${input}&page_size=20`
+    );
+
+    const data = res.data.results ?? res.data;
+
+    return data.map((i) => ({
+      value: i.id,
+      label: i.name,
+      ...i,
+    }));
+  };
+
+  const loadItemsDebounced = useMemo(
+    () => debounce(loadTransportItems, 800),
+    []
+  );
+
+
   const handleAdd = () => {
     if (!dealer) return alert("Select Dealer");
     if (!bags) return alert("Enter Bags");
@@ -36,7 +57,7 @@ export default function DealerSearchRow({ destinationId, onAdd }) {
       mda,
       date,
       bags: Number(bags),
-      description,
+      description: transportItem ? transportItem.label : "",
       bill_doc,
     });
 
@@ -62,19 +83,7 @@ export default function DealerSearchRow({ destinationId, onAdd }) {
         />
 
       </div>
-
-      <input
-        className="border p-1 rounded"
-        placeholder="Description"
-        value={description}
-        onChange={(e) => setDesc(e.target.value)}
-      />
-      <input
-        className="border p-1 rounded"
-        placeholder="Bill Doc"
-        value={bill_doc}
-        onChange={(e) => setBillDoc(e.target.value)}
-      />
+      
       <input
         className="border p-1 rounded"
         placeholder="MDA No"
@@ -92,6 +101,26 @@ export default function DealerSearchRow({ destinationId, onAdd }) {
         placeholder="Bags"
         value={bags}
         onChange={(e) => setBags(e.target.value)}
+      />
+
+      {/* ✅ Transport Item */}
+      <div>
+        <AsyncSelect
+          cacheOptions
+          defaultOptions
+          loadOptions={loadItemsDebounced}
+          value={transportItem}
+          onChange={setTransportItem}
+          placeholder="Transport item..."
+          isClearable
+        />
+      </div>
+
+      <input
+        className="border p-1 rounded"
+        placeholder="Bill Doc"
+        value={bill_doc}
+        onChange={(e) => setBillDoc(e.target.value)}
       />
 
       <button

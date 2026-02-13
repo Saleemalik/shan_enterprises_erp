@@ -3,6 +3,7 @@ import { NavLink } from "react-router-dom";
 export default function Sidebar() {
   const menuItems = [
     { label: "Dashboard", path: "/app/dashboard" },
+    { label: "Transport Items", path: "/app/transport-items" },
     { label: "Destinations", path: "/app/destinations" },
     { label: "Places", path: "/app/places" },
     { label: "RateRanges", path: "/app/rate-ranges" },
