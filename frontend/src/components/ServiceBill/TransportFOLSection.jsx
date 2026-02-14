@@ -5,6 +5,7 @@ export default function TransportFOLSection({
   data = {},
   serviceBillId,
   onChange,
+  item
 }) {
   /* ----------------------------------
    * Local state
@@ -27,6 +28,7 @@ export default function TransportFOLSection({
       .get("/destination-entries/transport-fol-unbilled/", {
         params: {
           service_bill_id: serviceBillId || undefined,
+          item,
         },
       })
       .then((res) => {

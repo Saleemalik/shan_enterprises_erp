@@ -6,6 +6,7 @@ export default function TransportDepotSection({
   data,
   serviceBillId,
   onChange,
+  item
 }) {
   /* ----------------------------------
    * Normalize data (NULL SAFE)
@@ -29,6 +30,7 @@ export default function TransportDepotSection({
       .get("/destination-entries/transport-depot-unbilled/", {
         params: {
           service_bill_id: serviceBillId || undefined,
+          item,
         },
       })
       .then((res) => setEntries(res.data.results || []))

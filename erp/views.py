@@ -718,6 +718,7 @@ class DestinationEntryViewSet(BaseViewSet):
         
         service_bill_id = request.query_params.get("service_bill_id")
         item = request.query_params.get("item")
+        
         qs = self.queryset.filter(
                 Q(transport_type="TRANSPORT_FOL") |
                 Q(destination__is_garage=False) | 
@@ -727,14 +728,10 @@ class DestinationEntryViewSet(BaseViewSet):
                 Q(service_bill_id=service_bill_id)
             )
         if item:
-            qs = qs.filter(description__icontains=item)
+            qs = qs.filter(range_entries__dealer_entries__description__icontains=item)
+            
+        qs = qs.distinct()
         
-        qs = qs.select_related(
-            "dealer",
-            "range_entry",
-            "range_entry__destination_entry",
-            "range_entry__destination_entry__destination",
-        )
 
         serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)

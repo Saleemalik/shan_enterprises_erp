@@ -319,6 +319,7 @@ export default function ServiceBillEdit() {
           data={form.depot}
           serviceBillId={form.id}
           onChange={(f, v) => updateField("depot", f, v)}
+          item={form.product}
         />
       )}
 
@@ -327,6 +328,7 @@ export default function ServiceBillEdit() {
           data={form.fol}
           serviceBillId={form.id}
           onChange={(f, v) => updateField("fol", f, v)}
+          item={form.product}
         />
       )}
 
