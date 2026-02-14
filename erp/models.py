@@ -141,6 +141,8 @@ class RangeEntry(UppercaseMixin, models.Model):
         blank=True,
         related_name="range_entries"
     )
+    
+    service_bill = models.ForeignKey("ServiceBill", on_delete=models.SET_NULL, null=True, blank=True, related_name="range_entries")
 
     def __str__(self):
         return f"{self.destination_entry} | Slab: {self.rate_range}"

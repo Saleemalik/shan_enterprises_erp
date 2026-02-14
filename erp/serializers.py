@@ -460,12 +460,12 @@ class TransportDepotSectionSerializer(serializers.ModelSerializer):
 
         # READ: compute entries dynamically
         data["entries"] = list(
-            DealerEntry.objects
+            RangeEntry.objects
             .filter(
                 Q(service_bill=instance.bill) &
                 (
-                    Q(range_entry__destination_entry__transport_type="TRANSPORT_DEPOT")
-                    | Q(range_entry__destination_entry__destination__is_garage=True)
+                    Q(destination_entry__transport_type="TRANSPORT_DEPOT")
+                    | Q(destination_entry__destination__is_garage=True)
                 )
             )
             .values_list("id", flat=True)
@@ -584,14 +584,14 @@ class ServiceBillSerializer(serializers.ModelSerializer):
         )
 
         # unlink removed entries
-        DealerEntry.objects.filter(
+        RangeEntry.objects.filter(
             service_bill=bill
         ).exclude(
             id__in=depot_entries_ids
         ).update(service_bill=None)
 
         # link selected entries
-        DealerEntry.objects.filter(
+        RangeEntry.objects.filter(
             id__in=depot_entries_ids
         ).update(service_bill=bill)
 
