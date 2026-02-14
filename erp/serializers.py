@@ -384,42 +384,33 @@ class DestinationEntryDetailSerializer(serializers.ModelSerializer):
             "range_entries",
         ]
 
-class TransportDepotDealerEntrySerializer(serializers.ModelSerializer):
+class TransportDepotRangeEntrySerializer(serializers.ModelSerializer):
     destination = serializers.CharField(
-        source="range_entry.destination_entry.destination.name",
+        source="destination_entry.destination.name",
         read_only=True
     )
-    product = serializers.CharField(
-        source="description",
-        read_only=True
-    ) 
+    product = serializers.SerializerMethodField()
     destination_entry_id = serializers.IntegerField(
-        source="range_entry.destination_entry.id",
+        source="destination_entry.id",
         read_only=True
     )
 
     qty_mt = serializers.FloatField(
-        source="mt",
+        source="total_mt",
         read_only=True
     )
 
-    km = serializers.FloatField(read_only=True)
-
+    km = serializers.SerializerMethodField()
     mt_km = serializers.FloatField(
-        source="mtk",
+        source="total_mtk",
         read_only=True
     )
 
     rate = serializers.FloatField(read_only=True)
-    amount = serializers.FloatField(read_only=True)
-
-    number = serializers.CharField(
-        source="mda_number",
-        read_only=True
-    )
+    amount = serializers.FloatField(source="total_amount",read_only=True)
 
     class Meta:
-        model = DealerEntry
+        model = RangeEntry
         fields = [
             "id",
             "destination_entry_id",  # Destination
@@ -429,9 +420,14 @@ class TransportDepotDealerEntrySerializer(serializers.ModelSerializer):
             "mt_km",         # MT × KM
             "rate",          # Rate
             "amount",        # Amount
-            "number",        # No.
             "product",      # Products
         ]
+        
+    def get_km(self, obj):
+        return obj.dealer_entries.first().km
+    def get_product(self, obj):
+        return obj.dealer_entries.first().description
+        
 
 
 class HandlingSectionSerializer(serializers.ModelSerializer):

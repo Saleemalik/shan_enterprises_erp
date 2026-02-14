@@ -1,6 +1,6 @@
 import os
 from .models import Dealer, Place, Destination, RateRange, DestinationEntry, RangeEntry, DealerEntry, ServiceBill, TransportItem
-from .serializers import DealerSerializer, PlaceSerializer, DestinationSerializer, RateRangeSerializer, DestinationEntrySerializer, DestinationEntryWriteSerializer, DestinationEntryDetailSerializer, TransportDepotDealerEntrySerializer, ServiceBillSerializer, PlaceListSerializer, TransportItemSerializer
+from .serializers import DealerSerializer, PlaceSerializer, DestinationSerializer, RateRangeSerializer, DestinationEntrySerializer, DestinationEntryWriteSerializer, DestinationEntryDetailSerializer, TransportDepotRangeEntrySerializer, ServiceBillSerializer, PlaceListSerializer, TransportItemSerializer
 from django.db.models import Q
 from .base import AppBaseViewSet, BaseViewSet
 import pandas as pd
@@ -689,28 +689,27 @@ class DestinationEntryViewSet(BaseViewSet):
         item = request.query_params.get("item")
 
         qs = (
-            DealerEntry.objects
+            RangeEntry.objects
             .filter(
-                Q(range_entry__destination_entry__transport_type="TRANSPORT_DEPOT") |
-                Q(range_entry__destination_entry__destination__is_garage=True)
+                Q(destination_entry__transport_type="TRANSPORT_DEPOT") |
+                Q(destination_entry__destination__is_garage=True)
             )
             .filter(
-                Q(service_bill__isnull=True) |
-                Q(service_bill_id=service_bill_id)
+                Q(destination_entry__service_bill__isnull=True) |
+                Q(destination_entry__service_bill_id=service_bill_id)
             )
         )
         
+        
         if item:
-            qs = qs.filter(description__icontains=item)
+            qs = qs.filter(dealer_entries__description__icontains=item)
 
         qs = qs.select_related(
-            "dealer",
-            "range_entry",
-            "range_entry__destination_entry",
-            "range_entry__destination_entry__destination",
-        )
+            "destination_entry",
+            "destination_entry__destination",
+        ).distinct()
 
-        serializer = TransportDepotDealerEntrySerializer(qs, many=True)
+        serializer = TransportDepotRangeEntrySerializer(qs, many=True)
         return Response({"results": serializer.data})
     
     @action(detail=False, methods=["get"], url_path="transport-fol-unbilled")
