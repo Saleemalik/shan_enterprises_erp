@@ -263,7 +263,32 @@ class TransportDepotSection(models.Model):
 
     total_depot_qty = models.FloatField(null=True, blank=True)
     total_depot_amount = models.FloatField(null=True, blank=True)
-    
+  
+class TransportDepotRow(models.Model):
+    depot_section = models.ForeignKey(
+        TransportDepotSection,
+        related_name="rows",
+        on_delete=models.CASCADE
+    )
+
+    destination = models.ForeignKey(Destination, on_delete=models.PROTECT)
+
+    range_entry = models.OneToOneField(
+        RangeEntry,
+        on_delete=models.PROTECT,
+    )
+
+    # snapshot values (copied at billing time)
+    product = models.CharField(max_length=255)
+    qty_mt = models.FloatField()
+    km = models.FloatField()
+    mt_km = models.FloatField()
+    rate = models.FloatField()
+    amount = models.FloatField()
+
+    def __str__(self):
+        return f"{self.destination.name} - {self.product}"
+   
 class TransportFOLSection(models.Model):
     bill = models.OneToOneField(
         ServiceBill,

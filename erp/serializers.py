@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Dealer, Place, Destination, RateRange, DealerEntry, RangeEntry, DestinationEntry, HandlingBillSection, TransportDepotSection, TransportFOLSection, ServiceBill, TransportFOLDestination, TransportFOLSlab, TransportItem
+from .models import Dealer, Place, Destination, RateRange, DealerEntry, RangeEntry, DestinationEntry, HandlingBillSection, TransportDepotSection, TransportFOLSection, ServiceBill, TransportFOLDestination, TransportFOLSlab, TransportItem, TransportDepotRow
 from .utils import generate_dealer_code
 from django.db import transaction
 from django.db.models import Q
@@ -594,6 +594,39 @@ class ServiceBillSerializer(serializers.ModelSerializer):
         RangeEntry.objects.filter(
             id__in=depot_entries_ids
         ).update(service_bill=bill)
+        
+        # delete rows no longer selected
+        depot_section.rows.exclude(
+            range_entry_id__in=depot_entries_ids
+        ).delete()
+        
+        # fetch selected ranges
+        ranges = (
+            RangeEntry.objects
+            .filter(id__in=depot_entries_ids)
+            .select_related(
+                "destination_entry",
+                "destination_entry__destination",
+            )
+            .prefetch_related("dealer_entries")
+        )
+        
+        for r in ranges:
+            dealer = r.dealer_entries.first()
+
+            TransportDepotRow.objects.update_or_create(
+                depot_section=depot_section,
+                range_entry=r,
+                defaults={
+                    "destination": r.destination_entry.destination,
+                    "product": dealer.description if dealer else "",
+                    "qty_mt": r.total_mt,
+                    "km": dealer.km if dealer else 0,
+                    "mt_km": r.total_mtk,
+                    "rate": r.rate,
+                    "amount": r.total_amount,
+                }
+            )
 
     def _sync_fol(self, bill, fol_data):
         if fol_data is None:
