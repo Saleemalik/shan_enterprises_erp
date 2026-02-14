@@ -177,7 +177,7 @@ export default function TransportDepotSection({
                       target="_blank"
                       className="text-blue-600 hover:underline"
                     >
-                      {row.destination || "-"}
+                      {row.destination || "-"} ({row.product})
                     </Link>
                   </td>
 

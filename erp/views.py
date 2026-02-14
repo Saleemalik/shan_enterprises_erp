@@ -686,6 +686,7 @@ class DestinationEntryViewSet(BaseViewSet):
         """
 
         service_bill_id = request.query_params.get("service_bill_id")
+        item = request.query_params.get("item")
 
         qs = (
             DealerEntry.objects
@@ -697,12 +698,16 @@ class DestinationEntryViewSet(BaseViewSet):
                 Q(service_bill__isnull=True) |
                 Q(service_bill_id=service_bill_id)
             )
-            .select_related(
-                "dealer",
-                "range_entry",
-                "range_entry__destination_entry",
-                "range_entry__destination_entry__destination",
-            )
+        )
+        
+        if item:
+            qs = qs.filter(description__icontains=item)
+
+        qs = qs.select_related(
+            "dealer",
+            "range_entry",
+            "range_entry__destination_entry",
+            "range_entry__destination_entry__destination",
         )
 
         serializer = TransportDepotDealerEntrySerializer(qs, many=True)
@@ -712,6 +717,7 @@ class DestinationEntryViewSet(BaseViewSet):
     def transport_fol_unbilled(self, request):
         
         service_bill_id = request.query_params.get("service_bill_id")
+        item = request.query_params.get("item")
         qs = self.queryset.filter(
                 Q(transport_type="TRANSPORT_FOL") |
                 Q(destination__is_garage=False) | 
@@ -720,6 +726,15 @@ class DestinationEntryViewSet(BaseViewSet):
                 Q(service_bill__isnull=True) |
                 Q(service_bill_id=service_bill_id)
             )
+        if item:
+            qs = qs.filter(description__icontains=item)
+        
+        qs = qs.select_related(
+            "dealer",
+            "range_entry",
+            "range_entry__destination_entry",
+            "range_entry__destination_entry__destination",
+        )
 
         serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)
@@ -842,7 +857,7 @@ class ServiceBillViewSet(BaseViewSet):
         "transport_depot__bill_number",
         "transport_fol__bill_number",
     ]
-
+    
     @transaction.atomic
     def perform_create(self, serializer):
         serializer.save()

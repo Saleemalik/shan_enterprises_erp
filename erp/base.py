@@ -2,6 +2,7 @@
 from rest_framework import viewsets, filters
 from rest_framework.permissions import IsAuthenticated
 from .mixins import SoftDeleteMixin, BulkDeleteMixin
+from django_filters.rest_framework import DjangoFilterBackend
 
 #  ModelViewSet with common features for the ERP application
 class BaseViewSet(viewsets.ModelViewSet):
@@ -12,7 +13,7 @@ class BaseViewSet(viewsets.ModelViewSet):
      - Login required
     """
     permission_classes = [IsAuthenticated]
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter, DjangoFilterBackend]
 
 class AppBaseViewSet(SoftDeleteMixin, BulkDeleteMixin, BaseViewSet):
     """
