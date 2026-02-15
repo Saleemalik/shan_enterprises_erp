@@ -318,9 +318,8 @@ def build_handling_section(story, bill: ServiceBill):
 
 def build_depot_section(story, bill: ServiceBill):
     depot = bill.transport_depot
-
-    dealer_entries = bill.dealer_entries.filter(Q(range_entry__destination_entry__transport_type="TRANSPORT_DEPOT") |
-                Q(range_entry__destination_entry__destination__is_garage=True))
+    
+    rows = depot.rows.select_related("destination")
 
     # --------------------------------------------------
     # HEADER (same as handling)
@@ -426,22 +425,19 @@ def build_depot_section(story, bill: ServiceBill):
     total_qty = 0
     total_amount = 0
 
-    for i, e in enumerate(dealer_entries, 1):
-        # remove .0 from from_km and to_km if integer
-        from_km = int(e.range_entry.rate_range.from_km)
-        to_km = int(e.range_entry.rate_range.to_km)
-        slab = f"SLAB {from_km}-{to_km}"
+    for i, r in enumerate(rows, 1):
         table_data.append([
             i,
-            e.range_entry.destination_entry.destination.name,
-            f"{e.mt:.3f}",
-            f"{slab}",
-            f"{e.mtk:.3f}",
-            f"{e.rate:.2f}",
-            f"{e.amount:.2f}",
+            r.destination.name,
+            f"{r.qty_mt:.3f}",
+            f"{r.km:.0f}" if r.km else "",
+            f"{r.mt_km:.3f}",
+            f"{r.rate:.2f}",
+            f"{r.amount:.2f}",
         ])
-        total_qty += e.mt
-        total_amount += e.amount
+
+        total_qty += r.qty_mt or 0
+        total_amount += r.amount or 0
 
     table_data.append([
         P("TOTAL"),      # col 0
