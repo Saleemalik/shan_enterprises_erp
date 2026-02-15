@@ -142,7 +142,7 @@ export default function DestinationEntries() {
                   </span>
                 ) : (
                   <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded">
-                    Not billed
+                    Not Billed 
                   </span>
                 )}
               </td>

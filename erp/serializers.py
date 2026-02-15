@@ -589,6 +589,16 @@ class ServiceBillSerializer(serializers.ModelSerializer):
         ).exclude(
             id__in=depot_entries_ids
         ).update(service_bill=None)
+        
+                # unlink old destination entries
+        DestinationEntry.objects.filter(
+            service_bill=bill
+        ).exclude(
+            id__in=destination_entry_ids
+        ).update(
+            service_bill=None,
+            transport_type=None
+        )
 
         # link selected entries
         RangeEntry.objects.filter(
@@ -609,6 +619,24 @@ class ServiceBillSerializer(serializers.ModelSerializer):
                 "destination_entry__destination",
             )
             .prefetch_related("dealer_entries")
+        )
+        
+        destination_entry_ids = {r.destination_entry_id for r in ranges}
+        
+        DestinationEntry.objects.filter(
+            service_bill=bill
+        ).exclude(
+            id__in=destination_entry_ids
+        ).update(
+            service_bill=None,
+            transport_type=None
+        )
+
+        DestinationEntry.objects.filter(
+            id__in=destination_entry_ids
+        ).update(
+            service_bill=bill,
+            transport_type="TRANSPORT_DEPOT"
         )
         
         for r in ranges:
