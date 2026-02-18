@@ -158,7 +158,7 @@ class BreakableRangeBlock(Flowable):
 class PlaceViewSet(AppBaseViewSet):
     queryset = Place.objects.all().order_by("name")
     serializer_class = PlaceSerializer
-    search_fields = ['name', 'district', 'destination__name']      
+    search_fields = ['name', 'district']      
     ordering_fields = ['name', 'distance', 'district', 'destination__name']  
     
     def list(self, request, *args, **kwargs):
@@ -172,7 +172,7 @@ class PlaceViewSet(AppBaseViewSet):
 class DealerViewSet(AppBaseViewSet):
     queryset = Dealer.objects.all().order_by("code")
     serializer_class = DealerSerializer
-    search_fields = ["name", "code", "mobile", "places__name", "places__destination__name"]
+    search_fields = ["name", "code", "mobile", "places__name"]
     ordering_fields = ["name", "code"]
 
     @action(detail=False, methods=["post"], url_path="import_excel")
