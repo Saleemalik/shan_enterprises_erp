@@ -223,10 +223,9 @@ export default function DestinationEntryCreate() {
         }
 
         const sortedEntries = [...range.dealer_entries].sort((a, b) => {
-          const mdaA = (a.mda_number || "").trim();
-          const mdaB = (b.mda_number || "").trim();
+          const mdaA = String(a.mda_number ?? "").trim();
+          const mdaB = String(b.mda_number ?? "").trim();
 
-          // empty MDA always last
           if (!mdaA && !mdaB) return 0;
           if (!mdaA) return 1;
           if (!mdaB) return -1;
