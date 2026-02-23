@@ -110,7 +110,7 @@ def build_handling_section(story, bill: ServiceBill):
             Paragraph(f"<b>BILL NO :</b> {handling.bill_number}", NORMAL),
             Paragraph(f"<b>Date :</b> {bill.bill_date.strftime('%d-%m-%Y')} &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;  ", RIGHT),
         ]],
-        colWidths=[275, 260],
+        colWidths=[260, 275],
     )
 
     header_tbl.setStyle(TableStyle([
@@ -151,12 +151,19 @@ def build_handling_section(story, bill: ServiceBill):
         ],
         colWidths=[160, 90, 70],
     )
-
+    
     qty_table.setStyle(TableStyle([
         ("GRID", (0, 0), (-1, -1), 0.7, colors.black),
+
+        # LEFT align first column (labels)
+        ("ALIGN", (0, 0), (0, -1), "LEFT"),
+
+        # RIGHT align numeric columns
         ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
+
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
     ]))
+
     
     clearing_box = Table(
         [
@@ -221,7 +228,7 @@ def build_handling_section(story, bill: ServiceBill):
 
     # --------------------------------------------------
     # TAX TABLE
-    # --------------------------------------------------
+    # --------------------------------------------------    
     tax_table = Table(
         [
             [
@@ -234,7 +241,7 @@ def build_handling_section(story, bill: ServiceBill):
                 handling.particulars or "Wagon",
                 handling.products or bill.product,
                 f"{handling.total_qty:.2f}",
-                f"{handling.bill_amount / handling.total_qty:.2f}",
+                f"{handling.rate:.2f}",
                 f"{handling.bill_amount:.2f}",
                 f"{handling.cgst:.2f}",
                 f"{handling.sgst:.2f}",
@@ -713,10 +720,10 @@ def build_fol_section(story, bill: ServiceBill):
     # GRAND TOTAL ROW
     # --------------------------------------------------
     table_data.append([
-        "", "TOTAL", "",
+        "", "TOTAL", f"{grand_qty:.2f}",
         f"{grand_qty:.2f}",
-        "", "", f"{grand_mtk:.2f}",
-        "", "", f"{grand_amount:.2f}",
+        "", "", "",
+        "", f"{grand_amount:.2f}", f"{grand_amount:.2f}",
     ])
 
     # --------------------------------------------------

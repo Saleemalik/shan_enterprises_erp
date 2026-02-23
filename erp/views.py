@@ -523,12 +523,11 @@ class DestinationEntryViewSet(BaseViewSet):
 
         to_split = to_address.split("\n") if to_address else []
         right_column = [Paragraph(line, styles['CustomNormal']) for line in to_split] + [
-            Spacer(1, 4),
+            Spacer(1, 12),
             Paragraph(f"Date: {date}", styles['CustomNormal']),
         ]
 
         # BILL BLOCK
-        elements.append(Paragraph(f"Bill No.: {bill_number}", styles["CustomNormal"]))
         elements.append(Spacer(1, 4))
         elements.append(Paragraph("Sir,", styles["CustomNormal"]))
         elements.append(Paragraph(letter_note if letter_note else "Please find the details below:", styles["CustomNormal"]))

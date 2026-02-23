@@ -235,6 +235,7 @@ class HandlingBillSection(UppercaseMixin, models.Model):
     products = models.CharField(max_length=255, null=True, blank=True)
 
     total_qty = models.FloatField(null=True, blank=True)
+    rate = models.FloatField(null=True, blank=True)
     bill_amount = models.FloatField(null=True, blank=True)
 
     cgst = models.FloatField(null=True, blank=True)
@@ -248,11 +249,11 @@ class HandlingBillSection(UppercaseMixin, models.Model):
     def clean(self):
         if self.total_bill_amount is not None:
             expected = (self.bill_amount or 0) + (self.cgst or 0) + (self.sgst or 0)
-            if round(expected, 2) != round(self.total_bill_amount, 2):
+            if abs(expected - self.total_bill_amount) > 0.02:
                 raise ValidationError(
                     "Total bill amount must equal bill amount + CGST + SGST."
                 )
-
+                
 class TransportDepotSection(models.Model):
     bill_number = models.CharField(max_length=255, unique=True)
     bill = models.OneToOneField(
