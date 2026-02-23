@@ -194,14 +194,6 @@ class DealerEntrySerializer(serializers.ModelSerializer):
             "mda_number", "date", "description", "remarks", "bill_doc",
         ]
         read_only_fields = ["id"]
-
-class RangeEntrySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = RangeEntry
-        fields = [
-            "id", "destination_entry", "rate_range",
-            "rate", "total_bags", "total_mt", "total_mtk", "total_amount"
-        ]
         
 class TransportItemSerializer(serializers.ModelSerializer):
     class Meta:
@@ -347,12 +339,14 @@ class DealerEntrySerializer(serializers.ModelSerializer):
 class RangeEntrySerializer(serializers.ModelSerializer):
     rate_range_display = serializers.SerializerMethodField()
     dealer_entries = DealerEntrySerializer(many=True, read_only=True)
+    is_mtk = serializers.BooleanField(source="rate_range.is_mtk", read_only=True)
 
     class Meta:
         model = RangeEntry
         fields = [
             "id",
             "rate_range",
+            "is_mtk",
             "rate_range_display",
             "rate",
             "total_bags",

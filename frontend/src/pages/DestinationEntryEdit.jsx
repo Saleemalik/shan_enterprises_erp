@@ -66,6 +66,7 @@ export default function DestinationEntryEdit() {
             rate: r.rate,
             from_km: Number(r.rate_range_display?.split("-")[0]),
             to_km: Number(r.rate_range_display?.split("-")[1]),
+            is_mtk: r.is_mtk,
           },
           rate: Number(r.rate),
           print_page_no: r.print_page_no ?? null,
