@@ -117,7 +117,7 @@ DATABASES = {
     }
 }
 
-# DATABASES['default'] = dj_database_url.parse(os.getenv('DB_BASE_URL'), conn_max_age=600)
+DATABASES['default'] = dj_database_url.parse(os.getenv('DB_BASE_URL'), conn_max_age=600)
 
 
 # Password validation
