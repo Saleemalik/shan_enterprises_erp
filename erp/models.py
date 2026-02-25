@@ -1,6 +1,6 @@
 from django.db import models
 from django.core.exceptions import ValidationError
-
+import uuid
 class UppercaseMixin:
     """
     Automatically uppercases all CharField and TextField values
@@ -27,6 +27,7 @@ class UppercaseMixin:
 class Destination(UppercaseMixin, models.Model):
     UPPERCASE_EXCLUDE = ["description"]
 
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     place = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
@@ -36,6 +37,7 @@ class Destination(UppercaseMixin, models.Model):
         return self.name
 
 class Place(UppercaseMixin, models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     distance = models.FloatField()
     district = models.CharField(max_length=255, blank=True, null=True)
@@ -49,6 +51,7 @@ class Place(UppercaseMixin, models.Model):
         return f"{self.name} ({self.distance} km)"
 
 class TransportItem(UppercaseMixin, models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     description = models.TextField(null=True, blank=True)
 
@@ -57,6 +60,7 @@ class TransportItem(UppercaseMixin, models.Model):
 
 
 class Dealer(UppercaseMixin, models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     code = models.CharField(max_length=255, unique=True)
     name = models.CharField(max_length=255)
 
@@ -72,6 +76,7 @@ class Dealer(UppercaseMixin, models.Model):
 
 
 class RateRange(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     from_km = models.FloatField()
     to_km = models.FloatField()
     rate = models.FloatField()
@@ -84,6 +89,7 @@ class RateRange(models.Model):
 class DestinationEntry(UppercaseMixin, models.Model):
     UPPERCASE_EXCLUDE = ["letter_note"]
 
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     destination = models.ForeignKey(Destination, on_delete=models.CASCADE)
     letter_note = models.TextField(null=True, blank=True)
     bill_number = models.CharField(max_length=255, null=True, blank=True)
@@ -124,6 +130,7 @@ class DestinationEntry(UppercaseMixin, models.Model):
 
 
 class RangeEntry(UppercaseMixin, models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     destination_entry = models.ForeignKey(DestinationEntry, on_delete=models.CASCADE, related_name="range_entries")
     rate_range = models.ForeignKey(RateRange, on_delete=models.SET_NULL, null=True)
 
@@ -172,6 +179,7 @@ class RangeEntry(UppercaseMixin, models.Model):
 class DealerEntry(UppercaseMixin, models.Model):
     UPPERCASE_EXCLUDE = ["remarks"]
 
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     range_entry = models.ForeignKey(RangeEntry, on_delete=models.CASCADE, related_name="dealer_entries")
     dealer = models.ForeignKey(Dealer, on_delete=models.SET_NULL, null=True)
 
@@ -197,6 +205,7 @@ class DealerEntry(UppercaseMixin, models.Model):
 class ServiceBill(UppercaseMixin, models.Model):
     UPPERCASE_EXCLUDE = ["to_address", "letter_note"]
     
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     bill_date = models.DateField(null=True, blank=True)
     to_address = models.TextField(null=True, blank=True)
     letter_note = models.TextField(null=True, blank=True)
@@ -216,6 +225,7 @@ class ServiceBill(UppercaseMixin, models.Model):
     
 
 class HandlingBillSection(UppercaseMixin, models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     bill_number = models.CharField(max_length=255, unique=True)
     bill = models.OneToOneField(
         ServiceBill,
@@ -255,6 +265,7 @@ class HandlingBillSection(UppercaseMixin, models.Model):
                 )
                 
 class TransportDepotSection(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     bill_number = models.CharField(max_length=255, unique=True)
     bill = models.OneToOneField(
         ServiceBill,
@@ -266,6 +277,7 @@ class TransportDepotSection(models.Model):
     total_depot_amount = models.FloatField(null=True, blank=True)
   
 class TransportDepotRow(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     depot_section = models.ForeignKey(
         TransportDepotSection,
         related_name="rows",
@@ -291,6 +303,7 @@ class TransportDepotRow(models.Model):
         return f"{self.destination.name} - {self.product}"
    
 class TransportFOLSection(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     bill = models.OneToOneField(
         ServiceBill,
         related_name="transport_fol",
@@ -312,6 +325,7 @@ class TransportFOLSection(models.Model):
         return f"Transport FOL Section for Bill #{self.bill.id}"   
 
 class TransportFOLSlab(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     fol_section = models.ForeignKey(
         TransportFOLSection,
         related_name="slabs",
@@ -333,6 +347,7 @@ class TransportFOLSlab(models.Model):
         return f"Slab: {self.range_slab} | Rate: {self.rate}"
     
 class TransportFOLDestination(UppercaseMixin, models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     fol_slab = models.ForeignKey(
         TransportFOLSlab,
         related_name="destinations",

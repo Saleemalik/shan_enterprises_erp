@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 import dj_database_url
+import django
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -114,10 +115,18 @@ DATABASES = {
         'PASSWORD':  os.getenv('DB_PASSWORD'),
         'HOST':  os.getenv('DB_HOST'),
         'PORT':  os.getenv('DB_PORT')
+    },
+    'old': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('OLD_DB'),
+        'USER':  os.getenv('DB_USER'),
+        'PASSWORD':  os.getenv('DB_PASSWORD'),
+        'HOST':  os.getenv('DB_HOST'),
+        'PORT':  os.getenv('DB_PORT')
     }
 }
 
-DATABASES['default'] = dj_database_url.parse(os.getenv('DB_BASE_URL'), conn_max_age=600)
+# DATABASES['default'] = dj_database_url.parse(os.getenv('DB_BASE_URL'), conn_max_age=600)
 
 
 # Password validation
