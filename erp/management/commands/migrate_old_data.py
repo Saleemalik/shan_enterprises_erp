@@ -80,6 +80,25 @@ class Command(BaseCommand):
                 dealer_map[old_id] = new_obj
 
             self.stdout.write(self.style.SUCCESS("Dealers migrated"))
+            
+            # =========================================
+            # 3.2 DEALER ↔ PLACE M2M
+            # =========================================
+            old_cursor.execute("""
+                SELECT dealer_id, place_id
+                FROM erp_dealer_places
+            """)
+
+            rows = old_cursor.fetchall()
+
+            for dealer_id, place_id in rows:
+                dealer = dealer_map.get(dealer_id)
+                place = place_map.get(place_id)
+
+                if dealer and place:
+                    dealer.places.add(place)
+
+            self.stdout.write(self.style.SUCCESS("Dealer-Place relations migrated"))
 
 
             # =========================================
