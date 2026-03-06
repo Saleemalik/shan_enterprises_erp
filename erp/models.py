@@ -3,11 +3,19 @@ from django.core.exceptions import ValidationError
 import uuid
 from django.utils import timezone
 
+
+class ActiveManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(is_deleted=False)
+
 class BaseSyncModel(models.Model):
     """
     Base model for multi-device synchronization.
     Includes timestamps and soft delete support.
     """
+    
+    objects = ActiveManager()
+    all_objects = models.Manager()
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -15,6 +23,7 @@ class BaseSyncModel(models.Model):
 
     class Meta:
         abstract = True
+        
         
 class UppercaseMixin:
     """
