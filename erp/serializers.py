@@ -386,7 +386,7 @@ class TransportDepotRangeEntrySerializer(serializers.ModelSerializer):
         read_only=True
     )
     product = serializers.SerializerMethodField()
-    destination_entry_id = serializers.IntegerField(
+    destination_entry_id = serializers.UUIDField(
         source="destination_entry.id",
         read_only=True
     )
@@ -439,7 +439,7 @@ class HandlingSectionSerializer(serializers.ModelSerializer):
 class TransportDepotSectionSerializer(serializers.ModelSerializer):
     # list of dealer entery ids
     entries = serializers.ListField(
-        child=serializers.IntegerField(),
+        child=serializers.UUIDField(),
         write_only=True,
         required=False
     )
