@@ -160,7 +160,7 @@ export default function ServiceBillList() {
                         toggleRow(bill.id, e.target.checked)
                       }
                     />
-                    <strong>Service Bill #{bill.id}</strong>
+                    <strong>Service Bill @{bill.date_of_clearing}</strong>
                   </div>
 
                   <span className="text-sm text-gray-600">

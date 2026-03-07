@@ -78,7 +78,7 @@ export default function DestinationEntries() {
         <table className="w-full text-sm">
           <thead className="bg-gray-100 text-left border-b">
             <tr>
-              <th className="p-2">ID</th>
+              <th className="p-2">At</th>
               <th className="p-2">Destination</th>
               <th className="p-2">Date</th>
               <th className="p-2">Ranges Used</th>
@@ -105,7 +105,7 @@ export default function DestinationEntries() {
 
           {entries.map((entry) => (
             <tr key={entry.id} className="border-b hover:bg-gray-50">
-              <td className="p-2">{entry.id}</td>
+              <td className="p-2">{entry.created_at}</td>
 
               <td className="p-2 font-medium">
                 {/* entry.destination could be a name or object — adjust if needed */}

@@ -429,7 +429,7 @@ class DestinationViewSet(AppBaseViewSet):
 class DestinationEntryViewSet(BaseViewSet):
     search_fields = ["id", "bill_number", "destination__name", "transport_type"]
     ordering_fields = ["id", "date", "bill_number"]
-    queryset = DestinationEntry.objects.all().order_by("-id")
+    queryset = DestinationEntry.objects.all().order_by("-date", "-created_at").select_related("destination", "service_bill")
 
     def get_serializer_class(self):
         if self.action in ["create", "update", "partial_update"]:

@@ -233,7 +233,7 @@ class ServiceBill(BaseSyncModel, UppercaseMixin, models.Model):
     bill_date = models.DateField(null=True, blank=True)
     to_address = models.TextField(null=True, blank=True)
     letter_note = models.TextField(null=True, blank=True)
-    date_of_clearing = models.CharField(max_length=255)
+    date_of_clearing = models.DateField(null=True, blank=True)
     product = models.CharField(max_length=255, default="FACTOMFOS")
     hsn_code = models.CharField(max_length=255, null=True, blank=True)
     year = models.CharField(max_length=50, null=True, blank=True)

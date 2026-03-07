@@ -226,6 +226,7 @@ class DestinationEntrySerializer(serializers.ModelSerializer):
     service_bill = serializers.SerializerMethodField()
     destination = DestinatonSerializerReadOnly(read_only=True)
     products = serializers.SerializerMethodField()
+    created_at = serializers.DateTimeField(format="%d-%m-%Y %H:%M", read_only=True)
 
     class Meta:
         model = DestinationEntry
@@ -239,6 +240,7 @@ class DestinationEntrySerializer(serializers.ModelSerializer):
             "products",
             "rate_ranges",
             "service_bill",
+            "created_at",
         ]
 
     def get_rate_ranges(self, obj):
@@ -548,6 +550,9 @@ class ServiceBillSerializer(serializers.ModelSerializer):
         source="transport_fol",
         allow_null=True
     )
+    created_at = serializers.DateTimeField(format="%d-%m-%Y %H:%M", read_only=True)
+    date_of_clearing = serializers.DateField(format="%d-%m-%Y")
+    bill_date = serializers.DateField(format="%d-%m-%Y")
 
     class Meta:
         model = ServiceBill
