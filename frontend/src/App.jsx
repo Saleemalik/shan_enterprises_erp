@@ -20,7 +20,7 @@ import GlobalLoader from "./components/GlobalLoader";
 export default function App() {
   return (
     <Router>
-      <GlobalLoader />
+      {/* <GlobalLoader /> */}
       <Routes>
         <Route path="/" element={<Login />} />
       
